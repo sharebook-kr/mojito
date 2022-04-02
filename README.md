@@ -4,3 +4,24 @@
 통합 모듈이라 칵테일 이름인 모히토를 프로젝트명으로 사용하고 있으며, 돈 벌어서 몰디브가서 모히토 한 잔 하자는 의미도 있습니다. 
 
 ![mojito-g60be5b0d7_640](https://user-images.githubusercontent.com/23475470/161363305-93b48dfa-76d0-4ecd-b703-4d7529323dc9.jpg)
+
+# 설치 
+
+```
+$ pip install mojito2
+```
+
+# 사용법
+## 한국투자증권
+
+```
+import mojito
+
+key = "발급받은 API KEY"
+secret = "발급받은 API SECRET"
+
+broker = mojito.KoreaInvestment(api_key=key, api_secret=secret)
+resp = broker.fetch_price("J", "005930")
+pprint.pprint(resp)
+
+```
