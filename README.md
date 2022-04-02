@@ -40,3 +40,17 @@ broker = mojito.KoreaInvestment(api_key=key, api_secret=secret)
 resp = broker.fetch_daily_price("J", "005930")
 pprint.pprint(resp)
 ```
+
+잔고 조회 
+
+```
+resp = broker.fetch_balance("00000000") # 계좌번호 8자리
+pprint.pprint(resp)
+```
+
+주문 
+
+```
+resp = broker.create_market_buy_order("00000000", "005930", 10) # 계좌번호 8자리, 삼성전자, 10주, 시장
+pprint.pprint(resp)
+```
