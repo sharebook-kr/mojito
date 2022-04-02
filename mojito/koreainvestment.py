@@ -4,27 +4,61 @@ import json
 
 
 class KoreaInvestment(Broker):
-    BASE_URL = "https://openapi.koreainvestment.com:9443"
-    BASE_URL_TEST = "https://openapivts.koreainvestment.com:29443"
-
     def __init__(self, api_key: str, api_secret: str):
+        """생성자
+
+        Args:
+            api_key (str): 발급받은 API key 
+            api_secret (str): 발급받은 API secret
+        """
+        self.BASE_URL = "https://openapi.koreainvestment.com:9443"
         self.api_key = api_key 
         self.api_secret = api_secret
         self.issue_access_token() 
+
+    def set_sandbox_mode(self, mode: bool=True):
+        """테스트(모의투자) 서버 사용 설정
+
+        Args:
+            mode (bool, optional): True: 테스트서버, False: 실서버 Defaults to True.
+        """
+        if mode:
+            self.BASE_URL = "https://openapivts.koreainvestment.com:29443"
 
     def issue_access_token(self):
         """접근토큰발급
         """
         path = "oauth2/tokenP"
+        url = f"{self.BASE_URL}/{path}"
         headers = {"content-type":"application/json"}
-        body = {
+        data = {
             "grant_type":"client_credentials",
             "appkey": self.api_key, 
             "appsecret": self.api_secret
         }
-        url = f"{self.BASE_URL}/{path}"
-        resp = requests.post(url, headers=headers, data=json.dumps(body))
+        resp = requests.post(url, headers=headers, data=json.dumps(data))
         self.access_token = 'Bearer {}'.format(resp.json()["access_token"])
+
+    def issue_hashkey(self, data: dict):
+        """해쉬키 발급
+
+        Args:
+            data (dict): POST 요청 데이터
+
+        Returns:
+            _type_: _description_
+        """
+        path = "uapi/hashkey"
+        url = f"{self.BASE_URL}/{path}"
+        headers = {
+           "content-type": "application/json", 
+           "appKey": self.api_key,
+           "appSecret": self.api_secret,
+           "User-Agent": "Mozilla/5.0"
+        }
+        resp = requests.post(url, headers=headers, data=json.dumps(data))
+        haskkey = resp.json()["HASH"] 
+        return haskkey
 
     def fetch_price(self, market_code: str, ticker: str) -> dict:
         """주식현재가시세
@@ -93,7 +127,7 @@ class KoreaInvestment(Broker):
         Returns:
             dict: _description_
         """
-        path = "/uapi/domestic-stock/v1/trading/inquire-balance" 
+        path = "uapi/domestic-stock/v1/trading/inquire-balance" 
         url = f"{self.BASE_URL}/{path}"
         headers = {
            "content-type": "application/json", 
@@ -118,6 +152,48 @@ class KoreaInvestment(Broker):
         res = requests.get(url, headers=headers, params=params)
         return res.json()
 
+    def create_order(self, side: str, acc_no: str, ticker: str, price: int, quantity: int, order_type: str) -> dict:
+        path = "uapi/domestic-stock/v1/trading/order-cash" 
+        url = f"{self.BASE_URL}/{path}"
+
+        tr_id = "TTTC0802U" if side == "buy" else "TTTC0801U"
+        unpr = "0" if order_type == "01" else str(price)
+
+        data = {
+            "CANO": acc_no, 
+            "ACNT_PRDT_CD": "01",
+            "PDNO": ticker, 
+            "ORD_DVSN": order_type, 
+            "ORD_QTY": str(quantity),
+            "ORD_UNPR": unpr
+        }
+        hashkey = self.issue_hashkey(data)
+        headers = {
+           "content-type": "application/json", 
+           "authorization": self.access_token,
+           "appKey": self.api_key,
+           "appSecret": self.api_secret,
+           "tr_id": tr_id, 
+           "custtype": "P",
+           "hashkey" : hashkey
+        }
+        resp = requests.post(url, headers=headers, data=json.dumps(data))
+        return resp.json()
+
+    def create_market_buy_order(self, acc_no: str, ticker: str, quantity: int) -> dict:
+        return self.create_order("buy", acc_no, ticker, 0, quantity, "01")
+
+    def create_market_sell_order(self, acc_no: str, ticker: str, quantity: int) -> dict:
+        return self.create_order("sell", acc_no, ticker, 0, quantity, "01")
+
+    def create_limit_buy_order(self, acc_no: str, ticker: str, price: int, quantity: str) -> dict:
+        return self.create_order("buy", acc_no, ticker, price, quantity, "00")
+
+    def create_limit_sell_order(self, acc_no: str, ticker: str, price: int, quantity: str) -> dict:
+        return self.create_order("sell", acc_no, ticker, price, quantity, "00")
+
+    def cancel_order(self):
+        pass
 
 if __name__ == "__main__":
     import pprint
@@ -138,3 +214,6 @@ if __name__ == "__main__":
 
     #resp = ki.fetch_balance("00000000")
     #pprint.pprint(resp)
+    
+    resp = ki.create_market_buy_order("63398082", "005930", 10)
+    pprint.pprint(resp)
