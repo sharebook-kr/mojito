@@ -9,14 +9,14 @@ with open("README.md", "r", encoding='UTF-8') as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name='mojito',
+    name='mojito2',
     version='0.0.1',
     author='Jonghun Yoo, Brayden Jo',
     author_email='jonghun.yoo@pyquant.co.kr, brayden.jo@pyquant.co.kr',
-    description='python wrapper for korea broker's REST API services',
+    description="python wrapper for korea broker's REST API services",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url='https://github.com/sharebook-kr/mojigo',
+    url='https://github.com/sharebook-kr/mojito',
     packages=setuptools.find_packages(),
     install_requires=install_requires,
     classifiers=[
