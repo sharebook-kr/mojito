@@ -14,6 +14,8 @@ $ pip install mojito2
 # 사용법
 ## 한국투자증권
 
+현재가 조회
+
 ```
 import mojito
 
@@ -24,4 +26,17 @@ broker = mojito.KoreaInvestment(api_key=key, api_secret=secret)
 resp = broker.fetch_price("J", "005930")
 pprint.pprint(resp)
 
+```
+
+일봉 데이터 조회 
+
+```
+import mojito
+
+key = "발급받은 API KEY"
+secret = "발급받은 API SECRET"
+
+broker = mojito.KoreaInvestment(api_key=key, api_secret=secret)
+resp = broker.fetch_daily_price("J", "005930")
+pprint.pprint(resp)
 ```
