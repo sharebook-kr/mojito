@@ -342,5 +342,5 @@ if __name__ == "__main__":
     #resp = broker.cancel_order("63398082", "91252", "0000117057", "00", 60000, 5, "Y")
     #print(resp)
     
-    resp = broker.create_limit_buy_order("63398082", "AMCX", 35, 1)
+    resp = broker.create_limit_buy_order("63398082", "TQQQ", 35, 1)
     print(resp)
