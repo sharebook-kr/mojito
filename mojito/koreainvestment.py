@@ -202,10 +202,19 @@ class KoreaInvestment(Broker):
         return self.create_order("sell", acc_no, ticker, 0, quantity, "01")
 
     def create_limit_buy_order(self, acc_no: str, ticker: str, price: int, quantity: str) -> dict:
-        return self.create_order("buy", acc_no, ticker, price, quantity, "00")
+        if self.exchange == "KOS":
+            resp = self.create_order("buy", acc_no, ticker, price, quantity, "00")
+        else:
+            resp = self.create_oversea_order("buy", acc_no, ticker, price, quantity, "00")
+
+        return resp
 
     def create_limit_sell_order(self, acc_no: str, ticker: str, price: int, quantity: str) -> dict:
-        return self.create_order("sell", acc_no, ticker, price, quantity, "00")
+        if self.exchange == "KOS":
+            resp = self.create_order("sell", acc_no, ticker, price, quantity, "00")
+        else:
+            resp = self.create_oversea_order("sell", acc_no, ticker, price, quantity, "00")
+        return resp
 
     def cancel_order(self, acc_no: str, order_code: str, order_id: str, order_type: str, price: int, quantity: int, all: str="Y"):
         return self.update_order(acc_no, order_code, order_id, order_type, price, quantity, all, is_change=False)
@@ -276,6 +285,36 @@ class KoreaInvestment(Broker):
         }
 
         resp = requests.get(url, headers=headers, params=params) 
+        return resp.json()
+
+    def create_oversea_order(self, side: str, acc_no: str, ticker: str, price: int, quantity: int, order_type: str) -> dict:
+        path = "uapi/overseas-stock/v1/trading/order" 
+        url = f"{self.BASE_URL}/{path}"
+
+        if side == "buy":
+            tr_id = "JTTT1002U"
+        else:
+            tr_ide = "JTTT1006U"
+
+        data = {
+            "CANO": acc_no, 
+            "ACNT_PRDT_CD": "01",
+            "OVRS_EXCG_CD": self.exchange,
+            "PDNO": ticker, 
+            "ORD_QTY": str(quantity),
+            "OVRS_ORD_UNPR": str(price), 
+            "ORD_DVSN": order_type 
+        }
+        hashkey = self.issue_hashkey(data)
+        headers = {
+           "content-type": "application/json", 
+           "authorization": self.access_token,
+           "appKey": self.api_key,
+           "appSecret": self.api_secret,
+           "tr_id": tr_id, 
+           "hashkey" : hashkey
+        }
+        resp = requests.post(url, headers=headers, data=json.dumps(data))
         return resp.json()
 
 
