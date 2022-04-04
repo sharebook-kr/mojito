@@ -54,3 +54,19 @@ pprint.pprint(resp)
 resp = broker.create_market_buy_order("00000000", "005930", 10) # 계좌번호 8자리, 삼성전자, 10주, 시장
 pprint.pprint(resp)
 ```
+
+```
+{'rt_cd': '0',
+ 'msg_cd': 'APBK0013',
+ 'msg1': '주문 전송 완료 되었습니다.',
+ 'output': {'KRX_FWDG_ORD_ORGNO': '91252',
+  'ODNO': '0000117057',
+  'ORD_TMD': '121052'}}
+```
+
+주문 취소
+
+```
+resp = broker.cancel_order("00000000", "91252", "0000117057", "00", 60000, 5, "Y") # 계좌번호, KRX_FWDG_ORD_ORGNO, ODNO, 지정가 주문, 가격, 수량, 모두 
+print(resp)
+```
