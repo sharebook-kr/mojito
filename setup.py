@@ -1,8 +1,7 @@
 import setuptools
 
 install_requires = [
-   'requests',
-   'json'
+   'requests'
 ]
 
 with open("README.md", "r", encoding='UTF-8') as fh:
