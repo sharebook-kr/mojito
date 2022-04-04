@@ -207,16 +207,16 @@ class KoreaInvestment(Broker):
     def create_limit_sell_order(self, acc_no: str, ticker: str, price: int, quantity: str) -> dict:
         return self.create_order("sell", acc_no, ticker, price, quantity, "00")
 
-    def cancel_order(self, acc_no: str, order_code: str, order_id: str, order_type: str, quantity: int, price: int, all: str="Y"):
-        self.update_order(acc_no, order_code, order_id, order_type, quantity, price, all, is_change=False)
+    def cancel_order(self, acc_no: str, order_code: str, order_id: str, order_type: str, price: int, quantity: int, all: str="Y"):
+        return self.update_order(acc_no, order_code, order_id, order_type, price, quantity, all, is_change=False)
 
-    def modify_order(self, acc_no: str, order_code: str, order_id: str, order_type: str, quantity: int, price: int, all: str="Y"):
-        self.update_order(acc_no, order_code, order_id, order_type, quantity, price, all, is_change=True)
+    def modify_order(self, acc_no: str, order_code: str, order_id: str, order_type: str, price: int, quantity: int, all: str="Y"):
+        return self.update_order(acc_no, order_code, order_id, order_type, price, quantity, all, is_change=True)
         
-    def update_order(self, acc_no: str, order_code: str, order_id: str, order_type: str, quantity: int, price: int, all: str="Y", is_change: bool=True):
+    def update_order(self, acc_no: str, order_code: str, order_id: str, order_type: str, price: int, quantity: int, all: str="Y", is_change: bool=True):
         path = "uapi/domestic-stock/v1/trading/order-rvsecncl"
         url = f"{self.BASE_URL}/{path}"
-        param = "02" if is_change else "01"
+        param = "01" if is_change else "02"
         data = {
             "CANO": acc_no, 
             "ACNT_PRDT_CD": "01",
@@ -301,3 +301,6 @@ if __name__ == "__main__":
     
     #resp = broker.create_market_buy_order("63398082", "005930", 10)
     #pprint.pprint(resp)
+
+    resp = broker.cancel_order("63398082", "91252", "0000117057", "00", 60000, 5, "Y")
+    print(resp)
