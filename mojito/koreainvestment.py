@@ -10,17 +10,14 @@ class KoreaInvestment(Broker):
         Args:
             api_key (str): 발급받은 API key 
             api_secret (str): 발급받은 API secret
-            exchange (str): "HKS": 홍콩
-                            "NYS": 뉴욕
-                            "NAS": 나스닥
-                            "AMS": 아멕스
-                            "TSE": 도쿄
-                            "SHS": 상해
-                            "SZS": 심천
-                            "SHI": 상해지수
-                            "SZI": 심천지수
-                            "HSX": 호치민
-                            "HNX": 하노이
+            exchange (str): "SEHK": 홍콩
+                            "NYSE": 뉴욕
+                            "NASD": 나스닥
+                            "AMEX": 아멕스
+                            "SEHK": 홍콩
+                            "SHAA": 중국상해
+                            "SZAA": 중국심천
+                            "TKSE": 일본
                             "KOS": KOSPI/KOSDAQ
         """
         self.BASE_URL = "https://openapi.koreainvestment.com:9443"
@@ -303,6 +300,7 @@ class KoreaInvestment(Broker):
             "PDNO": ticker, 
             "ORD_QTY": str(quantity),
             "OVRS_ORD_UNPR": str(price), 
+            "ORD_SVR_DVSN_CD": "0",
             "ORD_DVSN": order_type 
         }
         hashkey = self.issue_hashkey(data)
@@ -327,7 +325,7 @@ if __name__ == "__main__":
     key = lines[0].strip()
     secret = lines[1].strip()
 
-    broker = KoreaInvestment(key, secret)
+    broker = KoreaInvestment(key, secret, exchange="NASD")
     
     #resp = broker.fetch_price("J", "005930")
     #pprint.pprint(resp)
@@ -341,5 +339,8 @@ if __name__ == "__main__":
     #resp = broker.create_market_buy_order("63398082", "005930", 10)
     #pprint.pprint(resp)
 
-    resp = broker.cancel_order("63398082", "91252", "0000117057", "00", 60000, 5, "Y")
+    #resp = broker.cancel_order("63398082", "91252", "0000117057", "00", 60000, 5, "Y")
+    #print(resp)
+    
+    resp = broker.create_limit_buy_order("63398082", "AMCX", 35, 1)
     print(resp)
