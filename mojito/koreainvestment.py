@@ -1,7 +1,7 @@
 from mojito.base.broker import Broker 
 import requests 
 import json
-
+       
 
 class KoreaInvestment(Broker):
     def __init__(self, api_key: str, api_secret: str, exchange: str="KOS"):
@@ -325,7 +325,9 @@ if __name__ == "__main__":
     key = lines[0].strip()
     secret = lines[1].strip()
 
-    broker = KoreaInvestment(key, secret, exchange="NASD")
+    broker = KoreaInvestment(key, secret)
+
+    #broker = KoreaInvestment(key, secret, exchange="NASD")
     
     #resp = broker.fetch_price("J", "005930")
     #pprint.pprint(resp)
@@ -342,5 +344,5 @@ if __name__ == "__main__":
     #resp = broker.cancel_order("63398082", "91252", "0000117057", "00", 60000, 5, "Y")
     #print(resp)
     
-    resp = broker.create_limit_buy_order("63398082", "TQQQ", 35, 1)
-    print(resp)
+    #resp = broker.create_limit_buy_order("63398082", "TQQQ", 35, 1)
+    #print(resp)
