@@ -40,7 +40,6 @@ async def ws_client():
 
         while True:
             data = await websocket.recv()
-            data = json.loads(data)
             print(data)
 
 

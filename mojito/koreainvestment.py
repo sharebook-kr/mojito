@@ -5,6 +5,30 @@ import multiprocessing as mp
 import websockets
 import asyncio
 
+EXCHANGE_CODE = {
+    "홍콩": "HKS",
+    "뉴욕": "NYS",
+    "나스닥": "NAS",
+    "아멕스": "AMS",
+    "도쿄": "TSE",
+    "상해": "SHS",
+    "심천": "SZS",
+    "상해지수": "SHI",
+    "심천지수": "SZI",
+    "호치민": "HSX",
+    "하노이": "HNX"
+}
+
+# 해외주식 주문
+EXCHANGE_CODE2 = {
+    "나스닥": "NASD",
+    "뉴욕": "NYSE",
+    "아멕스": "AMEX",
+    "홍콩": "SEHK",
+    "상해": "SHAA",
+    "심천": "SZAA",
+    "도쿄": "TKSE"
+}
 
 class KoreaInvestmentWS(mp.Process):
     def __init__(self, api_key: str, api_secret: str, tr_id: str, tr_key: str):
@@ -53,21 +77,13 @@ class KoreaInvestmentWS(mp.Process):
 
 
 class KoreaInvestment(Broker):
-    def __init__(self, api_key: str, api_secret: str, exchange: str="KOS"):
+    def __init__(self, api_key: str, api_secret: str, exchange: str="서울"):
         """생성자
 
         Args:
             api_key (str): 발급받은 API key 
             api_secret (str): 발급받은 API secret
-            exchange (str): "SEHK": 홍콩
-                            "NYSE": 뉴욕
-                            "NASD": 나스닥
-                            "AMEX": 아멕스
-                            "SEHK": 홍콩
-                            "SHAA": 중국상해
-                            "SZAA": 중국심천
-                            "TKSE": 일본
-                            "KOS": KOSPI/KOSDAQ
+            exchange (str): "나스닥", "뉴욕", "아멕스", "홍콩", "상해", "심천", "도쿄" 
         """
         self.BASE_URL = "https://openapi.koreainvestment.com:9443"
         self.api_key = api_key 
@@ -121,7 +137,13 @@ class KoreaInvestment(Broker):
         haskkey = resp.json()["HASH"] 
         return haskkey
 
-    def fetch_price(self, market_code: str, ticker: str) -> dict:
+    def fetch_price(self, ticker: str) -> dict:
+        if self.exchange == "서울":
+            return self.fetch_domestic_price("J", ticker)
+        else:
+            return self.fetch_oversea_price(ticker)
+
+    def fetch_domestic_price(self, market_code: str, ticker: str) -> dict:
         """주식현재가시세
 
         Args:
@@ -147,11 +169,39 @@ class KoreaInvestment(Broker):
         resp = requests.get(url, headers=headers, params=params)
         return resp.json()
 
-    def fetch_daily_price(self, market_code: str, ticker: str, period: str='D', adj_price: bool=True) -> dict:
+    def fetch_oversea_price(self, ticker: str) -> dict:
+        """해외주식 현재체결가 
+
+        Args:
+            market_code (str): 시장 분류코드
+            ticker (str): 종목코드
+
+        Returns:
+            dict: API 개발 가이드 참조 
+        """
+        path = "uapi/overseas-price/v1/quotations/price"
+        url = f"{self.BASE_URL}/{path}"
+        headers = {
+           "content-type": "application/json", 
+           "authorization": self.access_token,
+           "appKey": self.api_key,
+           "appSecret": self.api_secret,
+           "tr_id": "HHDFS00000300"
+        }
+        
+        exchange_code = EXCHANGE_CODE[self.exchange]
+        params = {
+            "AUTH": "",
+            "EXCD": exchange_code,
+            "SYMB": ticker 
+        }
+        resp = requests.get(url, headers=headers, params=params)
+        return resp.json()
+
+    def fetch_daily_price(self, ticker: str, period: str='D', adj_price: bool=True) -> dict:
         """주식 현재가 일자별
 
         Args:
-            market_code (str): 시장 분류코드 
             ticker (str): 종목코드
             period (str): "D" (일), "W" (주), "M" (월)
             adj_price (bool, optional): True: 수정주가 반영, False: 수정주가 미반영. Defaults to True.
@@ -171,7 +221,7 @@ class KoreaInvestment(Broker):
 
         adj_param = "1" if adj_price else "0"
         params = {
-            "fid_cond_mrkt_div_code": market_code,
+            "fid_cond_mrkt_div_code": "J",
             "fid_input_iscd": ticker,
             "fid_org_adj_prc": adj_param,
             "fid_period_div_code": period
@@ -248,7 +298,7 @@ class KoreaInvestment(Broker):
         return self.create_order("sell", acc_no, ticker, 0, quantity, "01")
 
     def create_limit_buy_order(self, acc_no: str, ticker: str, price: int, quantity: str) -> dict:
-        if self.exchange == "KOS":
+        if self.exchange == "서울":
             resp = self.create_order("buy", acc_no, ticker, price, quantity, "00")
         else:
             resp = self.create_oversea_order("buy", acc_no, ticker, price, quantity, "00")
@@ -256,7 +306,7 @@ class KoreaInvestment(Broker):
         return resp
 
     def create_limit_sell_order(self, acc_no: str, ticker: str, price: int, quantity: str) -> dict:
-        if self.exchange == "KOS":
+        if self.exchange == "서울":
             resp = self.create_order("sell", acc_no, ticker, price, quantity, "00")
         else:
             resp = self.create_oversea_order("sell", acc_no, ticker, price, quantity, "00")
@@ -341,11 +391,12 @@ class KoreaInvestment(Broker):
             tr_id = "JTTT1002U"
         else:
             tr_ide = "JTTT1006U"
-
+        
+        exchange_cd = EXCHANGE_CODE2[self.exchange]
         data = {
             "CANO": acc_no, 
             "ACNT_PRDT_CD": "01",
-            "OVRS_EXCG_CD": self.exchange,
+            "OVRS_EXCG_CD": exchange_cd, 
             "PDNO": ticker, 
             "ORD_QTY": str(quantity),
             "OVRS_ORD_UNPR": str(price), 
@@ -374,14 +425,14 @@ if __name__ == "__main__":
     key = lines[0].strip()
     secret = lines[1].strip()
 
-    #broker = KoreaInvestment(key, secret)
-    #broker = KoreaInvestment(key, secret, exchange="NASD")
+    broker = KoreaInvestment(key, secret)
+    #broker = KoreaInvestment(key, secret, exchange="나스닥")
     
-    #resp = broker.fetch_price("J", "005930")
+    #resp = broker.fetch_price("005930")
     #pprint.pprint(resp)
     
-    #resp = broker.fetch_daily_price("J", "005930")
-    #pprint.pprint(resp)
+    resp = broker.fetch_daily_price("005930")
+    pprint.pprint(resp)
 
     #resp = broker.fetch_balance("00000000")
     #pprint.pprint(resp)
@@ -410,9 +461,9 @@ if __name__ == "__main__":
     #    print(data)
 
     # 실시간주식체결통보 
-    broker_ws = KoreaInvestmentWS(key, secret, "H0STCNI0", "user_id")
-    broker_ws.start()
-    for i in range(3):
-        data = broker_ws.get()
-        print(data)
+    #broker_ws = KoreaInvestmentWS(key, secret, "H0STCNI0", "user_id")
+    #broker_ws.start()
+    #for i in range(3):
+    #    data = broker_ws.get()
+    #    print(data)
 
