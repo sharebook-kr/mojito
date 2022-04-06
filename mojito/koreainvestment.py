@@ -410,7 +410,7 @@ if __name__ == "__main__":
     #    print(data)
 
     # 실시간주식체결통보 
-    broker_ws = KoreaInvestmentWS(key, secret, "H0STCNI0", "idjhh")
+    broker_ws = KoreaInvestmentWS(key, secret, "H0STCNI0", "user_id")
     broker_ws.start()
     for i in range(3):
         data = broker_ws.get()
