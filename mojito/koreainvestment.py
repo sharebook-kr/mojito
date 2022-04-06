@@ -7,12 +7,12 @@ import asyncio
 
 
 class KoreaInvestmentWS(mp.Process):
-    def __init__(self, api_key: str, api_secret: str, tr_id: str, ticker: str):
+    def __init__(self, api_key: str, api_secret: str, tr_id: str, tr_key: str):
         super().__init__() 
         self.api_key = api_key 
         self.api_secret = api_secret
         self.tr_id = tr_id
-        self.ticker = ticker
+        self.tr_key = tr_key 
         self.queue = mp.Queue()
 
     def run(self):
@@ -31,7 +31,7 @@ class KoreaInvestmentWS(mp.Process):
             }
             body = {
                 "tr_id": self.tr_id, 
-                "tr_key": self.ticker 
+                "tr_key": self.tr_key
             }
             fmt = {
                 "header": header, 
