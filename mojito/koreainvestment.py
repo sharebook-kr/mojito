@@ -1,7 +1,56 @@
 from mojito.base.broker import Broker 
 import requests 
 import json
-       
+import multiprocessing as mp
+import websockets
+import asyncio
+
+
+class KoreaInvestmentWS(mp.Process):
+    def __init__(self, api_key: str, api_secret: str, tr_id: str, ticker: str):
+        super().__init__() 
+        self.api_key = api_key 
+        self.api_secret = api_secret
+        self.tr_id = tr_id
+        self.ticker = ticker
+        self.queue = mp.Queue()
+
+    def run(self):
+        asyncio.run(self.ws_client())
+
+    async def ws_client(self):
+        uri = "ws://ops.koreainvestment.com:21000"
+
+        async with websockets.connect(uri, ping_interval=None) as websocket:
+            header = {
+                "appKey": self.api_key,
+                "appSecret": self.api_secret, 
+                "custtype": "P",
+                "tr_type": "1",
+                "content": "utf-8"
+            }
+            body = {
+                "tr_id": self.tr_id, 
+                "tr_key": self.ticker 
+            }
+            fmt = {
+                "header": header, 
+                "body": {
+                    "input": body
+                } 
+            }
+
+            subscribe_data = json.dumps(fmt)
+            await websocket.send(subscribe_data)
+
+            while True:
+                data = await websocket.recv()
+                self.queue.put(data)
+
+    def get(self):
+        data = self.queue.get()
+        return data
+
 
 class KoreaInvestment(Broker):
     def __init__(self, api_key: str, api_secret: str, exchange: str="KOS"):
@@ -325,8 +374,7 @@ if __name__ == "__main__":
     key = lines[0].strip()
     secret = lines[1].strip()
 
-    broker = KoreaInvestment(key, secret)
-
+    #broker = KoreaInvestment(key, secret)
     #broker = KoreaInvestment(key, secret, exchange="NASD")
     
     #resp = broker.fetch_price("J", "005930")
@@ -346,3 +394,25 @@ if __name__ == "__main__":
     
     #resp = broker.create_limit_buy_order("63398082", "TQQQ", 35, 1)
     #print(resp)
+
+    # 실시간주식 체결가 
+    #broker_ws = KoreaInvestmentWS(key, secret, "H0STCNT0", "005930")
+    #broker_ws.start()
+    #for i in range(3):
+    #    data = broker_ws.get()
+    #    print(data)
+
+    # 실시간주식호가
+    #broker_ws = KoreaInvestmentWS(key, secret, "H0STASP0", "005930")
+    #broker_ws.start()
+    #for i in range(3):
+    #    data = broker_ws.get()
+    #    print(data)
+
+    # 실시간주식체결통보 
+    broker_ws = KoreaInvestmentWS(key, secret, "H0STCNI0", "idjhh")
+    broker_ws.start()
+    for i in range(3):
+        data = broker_ws.get()
+        print(data)
+
