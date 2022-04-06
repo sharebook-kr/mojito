@@ -70,3 +70,42 @@ pprint.pprint(resp)
 resp = broker.cancel_order("00000000", "91252", "0000117057", "00", 60000, 5, "Y") # 계좌번호, KRX_FWDG_ORD_ORGNO, ODNO, 지정가 주문, 가격, 수량, 모두 
 print(resp)
 ```
+
+미국주식 주문
+
+```
+broker = KoreaInvestment(key, secret, exchange="NASD")
+resp = broker.create_limit_buy_order("63398082", "TQQQ", 35, 1)
+print(resp)
+```
+
+ 
+실시간주식 체결가 (웹소켓)
+
+```
+broker_ws = KoreaInvestmentWS(key, secret, "H0STCNT0", "005930")
+broker_ws.start()
+for i in range(3):
+    data = broker_ws.get()
+    print(data)
+```
+
+실시간주식 호가 (웹소켓)
+
+```
+broker_ws = KoreaInvestmentWS(key, secret, "H0STASP0", "005930")
+broker_ws.start()
+for i in range(3):
+    data = broker_ws.get()
+    print(data)
+```
+
+실시간주식체결통보 
+
+```
+broker_ws = KoreaInvestmentWS(key, secret, "H0STCNI0", "userid") # 사용자 아이디
+broker_ws.start()
+for i in range(3):
+    data = broker_ws.get()
+    print(data)
+```        
