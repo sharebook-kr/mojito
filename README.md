@@ -37,7 +37,7 @@ key = "발급받은 API KEY"
 secret = "발급받은 API SECRET"
 
 broker = mojito.KoreaInvestment(api_key=key, api_secret=secret)
-resp = broker.fetch_daily_price("J", "005930")
+resp = broker.fetch_daily_price("005930")
 pprint.pprint(resp)
 ```
 
