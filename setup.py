@@ -1,7 +1,9 @@
+"""setup file for pypi
+"""
 import setuptools
 
 install_requires = [
-    'requests', 
+    'requests',
     'websockets==9.1',
     'pycryptodome'
 ]
