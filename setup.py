@@ -1,7 +1,9 @@
 import setuptools
 
 install_requires = [
-   'requests'
+    'requests', 
+    'websockets==9.1',
+    'pycryptodome'
 ]
 
 with open("README.md", "r", encoding='UTF-8') as fh:
@@ -9,7 +11,7 @@ with open("README.md", "r", encoding='UTF-8') as fh:
 
 setuptools.setup(
     name='mojito2',
-    version='0.0.5',
+    version='0.0.6',
     author='Jonghun Yoo, Brayden Jo',
     author_email='jonghun.yoo@pyquant.co.kr, brayden.jo@pyquant.co.kr',
     description="python wrapper for korea broker's REST API services",
