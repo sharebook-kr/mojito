@@ -1,11 +1,9 @@
-"""_summary_
-"""
 import json
-import multiprocessing as mp
 import asyncio
-from base64 import b64decode
 import requests
 import websockets
+from base64 import b64decode
+from multiprocessing import Process, Queue
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
 from mojito.base.broker import Broker
@@ -48,6 +46,21 @@ execution_items = [
     "임의종료구분코드", "정적VI발동기준가"
 ]
 
+orderbook_items = [
+    "유가증권 단축 종목코드", "영업시간", "시간구분코드",
+    "매도호가10", "매도호가09", "매도호가08", "매도호가07", "매도호가06",
+    "매도호가05", "매도호가04", "매도호가03", "매도호가02", "매도호가01",
+    "매도호가잔량10", "매도호가잔량09", "매도호가잔량08", "매도호가잔량07", "매도호가잔량06",
+    "매도호가잔량05", "매도호가잔량04", "매도호가잔량03", "매도호가잔량02", "매도호가잔량01",
+    "매수호가01", "매수호가02", "매수호가03", "매수호가04", "매수호가05",
+    "매수호가06", "매수호가07", "매수호가08", "매수호가09", "매수호가10",
+    "매수호가잔량01", "매수호가잔량02", "매수호가잔량03", "매수호가잔량04", "매수호가잔량05",
+    "매수호가잔량06", "매수호가잔량07", "매수호가잔량08", "매수호가잔량09", "매수호가잔량10",
+    "총매도호가 잔량", "총매도호가 잔량 증감", "총매수호가 잔량", "총매수호가 잔량 증감",
+    "시간외 총매도호가 잔량", "시간외 총매수호가 증감", "시간외 총매도호가 잔량", "시간외 총매수호가 증감",
+    "예상 체결가", "예상 체결량", "예상 거래량", "예상체결 대비", "부호", "예상체결 전일대비율", "누적거래량", "주식매매 구분코드"
+]
+
 notice_items = [
     "고객ID", "계좌번호", "주문번호", "원주문번호", "매도매수구분", "정정구분", "주문종류",
     "주문조건", "주식단축종목코드", "체결수량", "체결단가", "주식체결시간", "거부여부",
@@ -56,16 +69,9 @@ notice_items = [
 ]
 
 
-class KoreaInvestmentWS(mp.Process):
-    """_summary_
-
-    Args:
-        mp (_type_): _description_
-    """
-    def __init__(self, api_key: str, api_secret: str, tr_id_list: list,
-                 tr_key_list: list, user_id: str=None):
+class KoreaInvestmentWS(Process):
+    def __init__(self, api_key: str, api_secret: str, tr_id_list: list, tr_key_list: list, user_id: str = None):
         """_summary_
-
         Args:
             api_key (str): _description_
             api_secret (str): _description_
@@ -81,10 +87,7 @@ class KoreaInvestmentWS(mp.Process):
         self.user_id = user_id
         self.aes_key = None
         self.aes_iv = None
-
-        self.execution_queue = mp.Queue()
-        self.orderbook_queue = mp.Queue()
-        self.notice_queue = mp.Queue()
+        self.queue = Queue()
 
     def run(self):
         """_summary_
@@ -140,8 +143,6 @@ class KoreaInvestmentWS(mp.Process):
                         self.parse_execution(tokens[2], tokens[3])
                     elif tokens[1] == "H0STASP0":
                         self.parse_orderbook(tokens[3])
-
-                    #self.queue.put(data)
                 elif data[0] == '1':
                     tokens = data.split('|')
                     if tokens[1] == "H0STCNI0":
@@ -164,156 +165,56 @@ class KoreaInvestmentWS(mp.Process):
 
     def aes_cbc_base64_dec(self, cipher_text: str):
         """_summary_
-
         Args:
             cipher_text (str): _description_
-
         Returns:
             _type_: _description_
         """
         cipher = AES.new(self.aes_key.encode('utf-8'), AES.MODE_CBC, self.aes_iv.encode('utf-8'))
         return bytes.decode(unpad(cipher.decrypt(b64decode(cipher_text)), AES.block_size))
 
-
     def parse_notice(self, notice_data: str):
         """_summary_
-
         Args:
-            notice_data (_type_): _description_
+            notice_data (_type_): 주식 체잔 데이터
         """
         aes_dec_str = self.aes_cbc_base64_dec(notice_data)
         tokens = aes_dec_str.split('^')
-
-        notice_data = {}
-        for i, item in enumerate(notice_items):
-            notice_data[item] = tokens[i]
-
-        self.notice_queue.put(notice_data)
-
+        notice_data = dict(zip(notice_items, tokens))
+        self.queue.put(['체잔', notice_data])
 
     def parse_execution(self, count: str, execution_data: str):
         """주식현재가 실시간 주식 체결가 데이터 파싱
-
         Args:
             count (str): the number of data
-            execution_data (str): 주식 체결가 포맷 데이터
+            execution_data (str): 주식 체결 데이터
         """
         tokens = execution_data.split('^')
-
-        index = 0
         for i in range(int(count)):
-            parsed_data = {}
-            for item in execution_items:
-                parsed_data[item] = tokens[index]
-                index += 1
-
-            self.execution_queue.put(parsed_data)
+            parsed_data = dict(zip(execution_items, tokens[i * 46: (i + 1) * 46]))
+            self.queue.put(['체결', parsed_data])
 
     def parse_orderbook(self, orderbook_data: str):
         """_summary_
-
         Args:
-            orderbook_data (str): orderbook data
+            orderbook_data (str): 주식 호가 데이터
         """
         recvvalue = orderbook_data.split('^')
-        orderbook = {}
+        orderbook = dict(zip(orderbook_items, recvvalue))
+        self.queue.put(['호가', orderbook])
 
-        orderbook["유가증권 단축 종목코드"] = recvvalue[0]
-        orderbook["영업시간"] = recvvalue[1]
-        orderbook["시간구분코드"] = recvvalue[2]
+    def get(self):
+        data = self.queue.get()
+        return data
 
-        orderbook["매도호가10"] = recvvalue[12]
-        orderbook["매도호가09"] = recvvalue[11]
-        orderbook["매도호가08"] = recvvalue[10]
-        orderbook["매도호가07"] = recvvalue[9]
-        orderbook["매도호가06"] = recvvalue[8]
-        orderbook["매도호가05"] = recvvalue[7]
-        orderbook["매도호가04"] = recvvalue[6]
-        orderbook["매도호가03"] = recvvalue[5]
-        orderbook["매도호가02"] = recvvalue[4]
-        orderbook["매도호가01"] = recvvalue[3]
-        orderbook["매도호가잔량10"] = recvvalue[32]
-        orderbook["매도호가잔량09"] = recvvalue[31]
-        orderbook["매도호가잔량08"] = recvvalue[30]
-        orderbook["매도호가잔량07"] = recvvalue[29]
-        orderbook["매도호가잔량06"] = recvvalue[28]
-        orderbook["매도호가잔량05"] = recvvalue[27]
-        orderbook["매도호가잔량04"] = recvvalue[26]
-        orderbook["매도호가잔량03"] = recvvalue[25]
-        orderbook["매도호가잔량02"] = recvvalue[24]
-        orderbook["매도호가잔량01"] = recvvalue[23]
-
-        orderbook["매수호가01"] = recvvalue[13]
-        orderbook["매수호가02"] = recvvalue[14]
-        orderbook["매수호가03"] = recvvalue[15]
-        orderbook["매수호가04"] = recvvalue[16]
-        orderbook["매수호가05"] = recvvalue[17]
-        orderbook["매수호가06"] = recvvalue[18]
-        orderbook["매수호가07"] = recvvalue[19]
-        orderbook["매수호가08"] = recvvalue[20]
-        orderbook["매수호가09"] = recvvalue[21]
-        orderbook["매수호가10"] = recvvalue[22]
-        orderbook["매수호가잔량01"] = recvvalue[33]
-        orderbook["매수호가잔량02"] = recvvalue[34]
-        orderbook["매수호가잔량03"] = recvvalue[35]
-        orderbook["매수호가잔량04"] = recvvalue[36]
-        orderbook["매수호가잔량05"] = recvvalue[37]
-        orderbook["매수호가잔량06"] = recvvalue[38]
-        orderbook["매수호가잔량07"] = recvvalue[39]
-        orderbook["매수호가잔량08"] = recvvalue[40]
-        orderbook["매수호가잔량09"] = recvvalue[41]
-        orderbook["매수호가잔량10"] = recvvalue[42]
-
-        orderbook["총매도호가 잔량"] = recvvalue[43]
-        orderbook["총매도호가 잔량 증감"] = recvvalue[54]
-        orderbook["총매수호가 잔량"] = recvvalue[44]
-        orderbook["총매수호가 잔량 증감"] = recvvalue[55]
-        orderbook["시간외 총매도호가 잔량"] = recvvalue[45]
-        orderbook["시간외 총매수호가 증감"] = recvvalue[46]
-        orderbook["시간외 총매도호가 잔량"] = recvvalue[56]
-        orderbook["시간외 총매수호가 증감"] = recvvalue[57]
-        orderbook["예상 체결가"] = recvvalue[47]
-        orderbook["예상 체결량"] =recvvalue[48]
-        orderbook["예상 거래량"] = recvvalue[49]
-        orderbook["예상체결 대비"] = recvvalue[50]
-        orderbook["부호"] = recvvalue[51]
-        orderbook["예상체결 전일대비율"] = recvvalue[52]
-        orderbook["누적거래량"] = recvvalue[53]
-        orderbook["주식매매 구분코드"] = recvvalue[58]
-        self.orderbook_queue.put(orderbook)
-
-    def get_execution(self):
-        """get execution from the fifo
-
-        Returns:
-            _type_: _description_
-        """
-        execution_data = self.execution_queue.get()
-        return execution_data
-
-    def get_orderbook(self):
-        """get orderbook data from the fifo
-
-        Returns:
-            _type_: _description_
-        """
-        orderbook_data = self.orderbook_queue.get()
-        return orderbook_data
-
-    def get_notice(self):
-        """get notice from the fifo
-
-        Returns:
-            _type_: _description_
-        """
-        notice_data = self.notice_queue.get()
-        return notice_data
+    def terminate(self):
+        if self.is_alive():
+            self.kill()
 
 
 class KoreaInvestment(Broker):
-    def __init__(self, api_key: str, api_secret: str, exchange: str="서울"):
+    def __init__(self, api_key: str, api_secret: str, exchange: str = "서울"):
         """생성자
-
         Args:
             api_key (str): 발급받은 API key
             api_secret (str): 발급받은 API secret
@@ -323,11 +224,11 @@ class KoreaInvestment(Broker):
         self.api_key = api_key
         self.api_secret = api_secret
         self.exchange = exchange
+        self.access_token = None
         self.issue_access_token()
 
-    def set_sandbox_mode(self, mode: bool=True):
+    def set_sandbox_mode(self, mode: bool = True):
         """테스트(모의투자) 서버 사용 설정
-
         Args:
             mode (bool, optional): True: 테스트서버, False: 실서버 Defaults to True.
         """
@@ -341,9 +242,9 @@ class KoreaInvestment(Broker):
         """
         path = "oauth2/tokenP"
         url = f"{self.BASE_URL}/{path}"
-        headers = {"content-type":"application/json"}
+        headers = {"content-type": "application/json"}
         data = {
-            "grant_type":"client_credentials",
+            "grant_type": "client_credentials",
             "appkey": self.api_key,
             "appsecret": self.api_secret
         }
@@ -352,10 +253,8 @@ class KoreaInvestment(Broker):
 
     def issue_hashkey(self, data: dict):
         """해쉬키 발급
-
         Args:
             data (dict): POST 요청 데이터
-
         Returns:
             _type_: _description_
         """
@@ -379,11 +278,9 @@ class KoreaInvestment(Broker):
 
     def fetch_domestic_price(self, market_code: str, ticker: str) -> dict:
         """주식현재가시세
-
         Args:
             market_code (str): 시장 분류코드
             ticker (str): 종목코드
-
         Returns:
             dict: API 개발 가이드 참조
         """
@@ -405,11 +302,8 @@ class KoreaInvestment(Broker):
 
     def fetch_oversea_price(self, ticker: str) -> dict:
         """해외주식 현재체결가
-
         Args:
-            market_code (str): 시장 분류코드
             ticker (str): 종목코드
-
         Returns:
             dict: API 개발 가이드 참조
         """
@@ -432,14 +326,12 @@ class KoreaInvestment(Broker):
         resp = requests.get(url, headers=headers, params=params)
         return resp.json()
 
-    def fetch_daily_price(self, ticker: str, period: str='D', adj_price: bool=True) -> dict:
+    def fetch_daily_price(self, ticker: str, period: str = 'D', adj_price: bool = True) -> dict:
         """주식 현재가 일자별
-
         Args:
             ticker (str): 종목코드
             period (str): "D" (일), "W" (주), "M" (월)
             adj_price (bool, optional): True: 수정주가 반영, False: 수정주가 미반영. Defaults to True.
-
         Returns:
             dict: _description_
         """
@@ -465,10 +357,8 @@ class KoreaInvestment(Broker):
 
     def fetch_balance(self, acc_no: str) -> dict:
         """주식잔고조회
-
         Args:
             acc_no (str): 계좌번호 앞8자리
-
         Returns:
             dict: _description_
         """
@@ -520,7 +410,7 @@ class KoreaInvestment(Broker):
            "appSecret": self.api_secret,
            "tr_id": tr_id,
            "custtype": "P",
-           "hashkey" : hashkey
+           "hashkey": hashkey
         }
         resp = requests.post(url, headers=headers, data=json.dumps(data))
         return resp.json()
@@ -531,7 +421,7 @@ class KoreaInvestment(Broker):
     def create_market_sell_order(self, acc_no: str, ticker: str, quantity: int) -> dict:
         return self.create_order("sell", acc_no, ticker, 0, quantity, "01")
 
-    def create_limit_buy_order(self, acc_no: str, ticker: str, price: int, quantity: str) -> dict:
+    def create_limit_buy_order(self, acc_no: str, ticker: str, price: int, quantity: int) -> dict:
         if self.exchange == "서울":
             resp = self.create_order("buy", acc_no, ticker, price, quantity, "00")
         else:
@@ -539,20 +429,20 @@ class KoreaInvestment(Broker):
 
         return resp
 
-    def create_limit_sell_order(self, acc_no: str, ticker: str, price: int, quantity: str) -> dict:
+    def create_limit_sell_order(self, acc_no: str, ticker: str, price: int, quantity: int) -> dict:
         if self.exchange == "서울":
             resp = self.create_order("sell", acc_no, ticker, price, quantity, "00")
         else:
             resp = self.create_oversea_order("sell", acc_no, ticker, price, quantity, "00")
         return resp
 
-    def cancel_order(self, acc_no: str, order_code: str, order_id: str, order_type: str, price: int, quantity: int, all: str="Y"):
-        return self.update_order(acc_no, order_code, order_id, order_type, price, quantity, all, is_change=False)
+    def cancel_order(self, acc_no: str, order_code: str, order_id: str, order_type: str, price: int, quantity: int):
+        return self.update_order(acc_no, order_code, order_id, order_type, price, quantity, is_change=False)
 
-    def modify_order(self, acc_no: str, order_code: str, order_id: str, order_type: str, price: int, quantity: int, all: str="Y"):
-        return self.update_order(acc_no, order_code, order_id, order_type, price, quantity, all, is_change=True)
+    def modify_order(self, acc_no: str, order_code: str, order_id: str, order_type: str, price: int, quantity: int):
+        return self.update_order(acc_no, order_code, order_id, order_type, price, quantity)
 
-    def update_order(self, acc_no: str, order_code: str, order_id: str, order_type: str, price: int, quantity: int, all: str="Y", is_change: bool=True):
+    def update_order(self, acc_no: str, order_code: str, order_id: str, order_type: str, price: int, quantity: int, is_change: bool = True):
         path = "uapi/domestic-stock/v1/trading/order-rvsecncl"
         url = f"{self.BASE_URL}/{path}"
         param = "01" if is_change else "02"
@@ -574,18 +464,16 @@ class KoreaInvestment(Broker):
            "appKey": self.api_key,
            "appSecret": self.api_secret,
            "tr_id": "TTTC0803U",
-           "hashkey" : hashkey
+           "hashkey": hashkey
         }
         resp = requests.post(url, headers=headers, data=json.dumps(data))
         return resp.json()
 
     def fetch_open_order(self, acc_no: str, param: dict):
         """주식 정정/취소가능 주문 조회
-
         Args:
             acc_no (str): 8자리 계좌번호
             param (dict): 세부 파라미터
-
         Returns:
             _type_: _description_
         """
@@ -624,7 +512,7 @@ class KoreaInvestment(Broker):
         if side == "buy":
             tr_id = "JTTT1002U"
         else:
-            tr_ide = "JTTT1006U"
+            tr_id = "JTTT1006U"
 
         exchange_cd = EXCHANGE_CODE2[self.exchange]
         data = {
@@ -644,15 +532,13 @@ class KoreaInvestment(Broker):
            "appKey": self.api_key,
            "appSecret": self.api_secret,
            "tr_id": tr_id,
-           "hashkey" : hashkey
+           "hashkey": hashkey
         }
         resp = requests.post(url, headers=headers, data=json.dumps(data))
         return resp.json()
 
 
 if __name__ == "__main__":
-    import pprint
-
     with open("../koreainvestment.key") as f:
         lines = f.readlines()
 
@@ -660,44 +546,48 @@ if __name__ == "__main__":
     secret = lines[1].strip()
 
     broker = KoreaInvestment(key, secret)
-    #broker = KoreaInvestment(key, secret, exchange="나스닥")
-
-    #resp = broker.fetch_price("005930")
-    #pprint.pprint(resp)
-
-    #resp = broker.fetch_daily_price("005930")
-    #pprint.pprint(resp)
-
-    #resp = broker.fetch_balance("00000000")
-    #pprint.pprint(resp)
-
-    #resp = broker.create_market_buy_order("63398082", "005930", 10)
-    #pprint.pprint(resp)
-
-    #resp = broker.cancel_order("63398082", "91252", "0000117057", "00", 60000, 5, "Y")
-    #print(resp)
-
-    #resp = broker.create_limit_buy_order("63398082", "TQQQ", 35, 1)
-    #print(resp)
+    # broker = KoreaInvestment(key, secret, exchange="나스닥")
+    # import pprint
+    # resp = broker.fetch_price("005930")
+    # pprint.pprint(resp)
+    #
+    # resp = broker.fetch_daily_price("005930")
+    # pprint.pprint(resp)
+    #
+    # resp = broker.fetch_balance("00000000")
+    # pprint.pprint(resp)
+    #
+    # resp = broker.create_market_buy_order("63398082", "005930", 10)
+    # pprint.pprint(resp)
+    #
+    # resp = broker.cancel_order("63398082", "91252", "0000117057", "00", 60000, 5, "Y")
+    # print(resp)
+    #
+    # resp = broker.create_limit_buy_order("63398082", "TQQQ", 35, 1)
+    # print(resp)
 
     # 실시간주식 체결가
     broker_ws = KoreaInvestmentWS(key, secret, ["H0STCNT0", "H0STASP0"], ["005930", "000660"], user_id="idjhh82")
-    #broker_ws = KoreaInvestmentWS(key, secret, ["H0STCNT0"], "005930")
     broker_ws.start()
     while True:
-        data = broker_ws.get()
-        print(data)
+        data_ = broker_ws.get()
+        if data_[0] == '체결':
+            print(data_[1])
+        elif data_[0] == '호가':
+            print(data_[1])
+        elif data_[0] == '체잔':
+            print(data_[1])
 
     # 실시간주식호가
-    #broker_ws = KoreaInvestmentWS(key, secret, "H0STASP0", "005930")
-    #broker_ws.start()
-    #for i in range(3):
+    # broker_ws = KoreaInvestmentWS(key, secret, "H0STASP0", "005930")
+    # broker_ws.start()
+    # for i in range(3):
     #    data = broker_ws.get()
     #    print(data)
-
+    #
     # 실시간주식체결통보
-    #broker_ws = KoreaInvestmentWS(key, secret, "H0STCNI0", "user_id")
-    #broker_ws.start()
-    #for i in range(3):
+    # broker_ws = KoreaInvestmentWS(key, secret, "H0STCNI0", "user_id")
+    # broker_ws.start()
+    # for i in range(3):
     #    data = broker_ws.get()
     #    print(data)
