@@ -6,7 +6,6 @@ from base64 import b64decode
 from multiprocessing import Process, Queue
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
-from mojito.base.broker import Broker
 
 EXCHANGE_CODE = {
     "홍콩": "HKS",
@@ -259,7 +258,7 @@ class KoreaInvestmentWS(Process):
             self.kill()
 
 
-class KoreaInvestment(Broker):
+class KoreaInvestment:
     def __init__(self, api_key: str, api_secret: str, exchange: str = "서울"):
         """생성자
         Args:
