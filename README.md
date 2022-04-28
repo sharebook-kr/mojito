@@ -20,6 +20,7 @@ https://wikidocs.net/book/7845
 
 ```
 import mojito
+import pprint
 
 key = "발급받은 API KEY"
 secret = "발급받은 API SECRET"
@@ -34,6 +35,7 @@ pprint.pprint(resp)
 
 ```
 import mojito
+import pprint
 
 key = "발급받은 API KEY"
 secret = "발급받은 API SECRET"
@@ -81,33 +83,26 @@ resp = broker.create_limit_buy_order("63398082", "TQQQ", 35, 1)
 print(resp)
 ```
 
- 
-실시간주식 체결가 (웹소켓)
-
+웹소켓
 ```
-broker_ws = KoreaInvestmentWS(key, secret, "H0STCNT0", "005930")
-broker_ws.start()
-for i in range(3):
-    data = broker_ws.get()
-    print(data)
-```
+import pprint
+import mojito
 
-실시간주식 호가 (웹소켓)
+with open("../../koreainvestment.key", encoding="utf-8") as f:
+    lines = f.readlines()
+key = lines[0].strip()
+secret = lines[1].strip()
 
-```
-broker_ws = KoreaInvestmentWS(key, secret, "H0STASP0", "005930")
-broker_ws.start()
-for i in range(3):
-    data = broker_ws.get()
-    print(data)
-```
 
-실시간주식체결통보 
-
-```
-broker_ws = KoreaInvestmentWS(key, secret, "H0STCNI0", "userid") # 사용자 아이디
-broker_ws.start()
-for i in range(3):
-    data = broker_ws.get()
-    print(data)
+if __name__ == "__main__":
+    broker_ws = mojito.KoreaInvestmentWS(key, secret, ["H0STCNT0", "H0STASP0"], ["005930", "000660"], user_id="idjhh82")
+    broker_ws.start()
+    while True:
+        data_ = broker_ws.get()
+        if data_[0] == '체결':
+            print(data_[1])
+        elif data_[0] == '호가':
+            print(data_[1])
+        elif data_[0] == '체잔':
+            print(data_[1])
 ```        
