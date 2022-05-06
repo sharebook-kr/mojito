@@ -1,5 +1,9 @@
+'''
+한국투자증권 python wrapper
+'''
 import json
 import asyncio
+from locale import currency
 import requests
 import websockets
 from base64 import b64decode
@@ -22,6 +26,7 @@ EXCHANGE_CODE = {
 }
 
 # 해외주식 주문
+# 해외주식 잔고
 EXCHANGE_CODE2 = {
     "나스닥": "NASD",
     "뉴욕": "NYSE",
@@ -30,6 +35,16 @@ EXCHANGE_CODE2 = {
     "상해": "SHAA",
     "심천": "SZAA",
     "도쿄": "TKSE"
+}
+
+CURRENCY_CODE = {
+    "나스닥": "USD",
+    "뉴욕": "USD",
+    "아멕스": "USD",
+    "홍콩": "HKD",
+    "상해": "CNY",
+    "심천": "CNY",
+    "도쿄": "JPY"
 }
 
 execution_items = [
@@ -259,6 +274,9 @@ class KoreaInvestmentWS(Process):
 
 
 class KoreaInvestment:
+    '''
+    한국투자증권 REST API
+    '''
     def __init__(self, api_key: str, api_secret: str, exchange: str = "서울"):
         """생성자
         Args:
@@ -317,6 +335,14 @@ class KoreaInvestment:
         return haskkey
 
     def fetch_price(self, ticker: str) -> dict:
+        """fetch price
+
+        Args:
+            ticker (str): 종목코드
+
+        Returns:
+            dict: _description_
+        """
         if self.exchange == "서울":
             return self.fetch_domestic_price("J", ticker)
         else:
@@ -402,6 +428,20 @@ class KoreaInvestment:
         return res.json()
 
     def fetch_balance(self, acc_no: str) -> dict:
+        """잔고 조회
+
+        Args:
+            acc_no (str): 계좌번호 앞 8자리
+
+        Returns:
+            dict: response data
+        """
+        if self.exchange == '서울':
+            return self.fetch_balance_domestic(acc_no)
+        else:
+            return self.fetch_balance_oversea(acc_no)
+
+    def fetch_balance_domestic(self, acc_no: str) -> dict:
         """주식잔고조회
         Args:
             acc_no (str): 계좌번호 앞8자리
@@ -429,6 +469,42 @@ class KoreaInvestment:
             'PRCS_DVSN': '01',
             'CTX_AREA_FK100': '',
             'CTX_AREA_NK100': ''
+        }
+        res = requests.get(url, headers=headers, params=params)
+        return res.json()
+
+    def fetch_balance_oversea(self, acc_no: str) -> dict:
+        """해외주식 잔고조회
+        Args:
+            acc_no (str): 계좌번호 앞8자리
+        Returns:
+            dict: _description_
+        """
+        path = "/uapi/overseas-stock/v1/trading/inquire-balance"
+        url = f"{self.BASE_URL}/{path}"
+
+        if self.exchange in ['나스닥', '뉴욕', '아멕스']:
+            tr_id = "JTTT3012R"
+        else:
+            tr_id = "TTTS3012R"
+
+        headers = {
+           "content-type": "application/json",
+           "authorization": self.access_token,
+           "appKey": self.api_key,
+           "appSecret": self.api_secret,
+           "tr_id": tr_id
+        }
+
+        exchange_cd = EXCHANGE_CODE2[self.exchange]
+        currency_cd = CURRENCY_CODE[self.exchange]
+        params = {
+            'CANO': acc_no,
+            'ACNT_PRDT_CD': '01',
+            'OVRS_EXCG_CD': exchange_cd,
+            'TR_CRCY_CD': currency_cd,
+            'CTX_AREA_FK200': "",
+            'CTX_AREA_NK200': ""
         }
         res = requests.get(url, headers=headers, params=params)
         return res.json()
@@ -585,23 +661,24 @@ class KoreaInvestment:
 
 
 if __name__ == "__main__":
-    with open("../koreainvestment.key") as f:
+    with open("../koreainvestment.key", encoding='utf-8') as f:
         lines = f.readlines()
 
     key = lines[0].strip()
     secret = lines[1].strip()
 
-    broker = KoreaInvestment(key, secret)
-    # broker = KoreaInvestment(key, secret, exchange="나스닥")
-    # import pprint
+    #broker = KoreaInvestment(key, secret)
+    broker = KoreaInvestment(key, secret, exchange="나스닥")
+
+    import pprint
     # resp = broker.fetch_price("005930")
     # pprint.pprint(resp)
     #
     # resp = broker.fetch_daily_price("005930")
     # pprint.pprint(resp)
     #
-    # resp = broker.fetch_balance("00000000")
-    # pprint.pprint(resp)
+    resp = broker.fetch_balance("63398082")
+    pprint.pprint(resp)
     #
     # resp = broker.create_market_buy_order("63398082", "005930", 10)
     # pprint.pprint(resp)
@@ -613,16 +690,16 @@ if __name__ == "__main__":
     # print(resp)
 
     # 실시간주식 체결가
-    broker_ws = KoreaInvestmentWS(key, secret, ["H0STCNT0", "H0STASP0"], ["005930", "000660"], user_id="idjhh82")
-    broker_ws.start()
-    while True:
-        data_ = broker_ws.get()
-        if data_[0] == '체결':
-            print(data_[1])
-        elif data_[0] == '호가':
-            print(data_[1])
-        elif data_[0] == '체잔':
-            print(data_[1])
+    #broker_ws = KoreaInvestmentWS(key, secret, ["H0STCNT0", "H0STASP0"], ["005930", "000660"], user_id="idjhh82")
+    #broker_ws.start()
+    #while True:
+    #    data_ = broker_ws.get()
+    #    if data_[0] == '체결':
+    #        print(data_[1])
+    #    elif data_[0] == '호가':
+    #        print(data_[1])
+    #    elif data_[0] == '체잔':
+    #        print(data_[1])
 
     # 실시간주식호가
     # broker_ws = KoreaInvestmentWS(key, secret, "H0STASP0", "005930")
