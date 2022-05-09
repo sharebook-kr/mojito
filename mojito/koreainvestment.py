@@ -480,6 +480,35 @@ class KoreaInvestment:
         Returns:
             dict: _description_
         """
+        path = "/uapi/overseas-stock/v1/trading/inquire-present-balance"
+        url = f"{self.BASE_URL}/{path}"
+
+        headers = {
+           "content-type": "application/json",
+           "authorization": self.access_token,
+           "appKey": self.api_key,
+           "appSecret": self.api_secret,
+           "tr_id": "CTRP6504R"
+        }
+
+        params = {
+            'CANO': acc_no,
+            'ACNT_PRDT_CD': '01',
+            "WCRC_FRCR_DVSN_CD": "02",
+            "NATN_CD": "840",
+            "TR_MKET_CD": "01",
+            "INQR_DVSN_CD": "00"
+        }
+        res = requests.get(url, headers=headers, params=params)
+        return res.json()
+
+    def fetch_balance_oversea2(self, acc_no: str) -> dict:
+        """해외주식 잔고조회
+        Args:
+            acc_no (str): 계좌번호 앞8자리
+        Returns:
+            dict: _description_
+        """
         path = "/uapi/overseas-stock/v1/trading/inquire-balance"
         url = f"{self.BASE_URL}/{path}"
 
@@ -544,6 +573,17 @@ class KoreaInvestment:
         return self.create_order("sell", acc_no, ticker, 0, quantity, "01")
 
     def create_limit_buy_order(self, acc_no: str, ticker: str, price: int, quantity: int) -> dict:
+        """지정가 매수
+
+        Args:
+            acc_no (str): 계좌번호
+            ticker (str): 종목코드
+            price (int): 가격
+            quantity (int): 수량
+
+        Returns:
+            dict: _description_
+        """
         if self.exchange == "서울":
             resp = self.create_order("buy", acc_no, ticker, price, quantity, "00")
         else:
