@@ -3,11 +3,10 @@
 '''
 import json
 import asyncio
-from locale import currency
-import requests
-import websockets
 from base64 import b64decode
 from multiprocessing import Process, Queue
+import requests
+import websockets
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
 
@@ -131,7 +130,10 @@ notice_items = [
 
 
 class KoreaInvestmentWS(Process):
-    def __init__(self, api_key: str, api_secret: str, tr_id_list: list, tr_key_list: list, user_id: str = None):
+    """WebSocket
+    """
+    def __init__(self, api_key: str, api_secret: str, tr_id_list: list,
+                 tr_key_list: list, user_id: str = None):
         """_summary_
         Args:
             api_key (str): _description_
@@ -265,6 +267,11 @@ class KoreaInvestmentWS(Process):
         self.queue.put(['호가', orderbook])
 
     def get(self):
+        """get data from the queue
+
+        Returns:
+            _type_: _description_
+        """
         data = self.queue.get()
         return data
 
@@ -284,7 +291,7 @@ class KoreaInvestment:
             api_secret (str): 발급받은 API secret
             exchange (str): "나스닥", "뉴욕", "아멕스", "홍콩", "상해", "심천", "도쿄"
         """
-        self.BASE_URL = "https://openapi.koreainvestment.com:9443"
+        self.base_url = "https://openapi.koreainvestment.com:9443"
         self.api_key = api_key
         self.api_secret = api_secret
         self.exchange = exchange
@@ -297,15 +304,15 @@ class KoreaInvestment:
             mode (bool, optional): True: 테스트서버, False: 실서버 Defaults to True.
         """
         if mode:
-            self.BASE_URL = "https://openapivts.koreainvestment.com:29443"
+            self.base_url = "https://openapivts.koreainvestment.com:29443"
         else:
-            self.BASE_URL = "https://openapi.koreainvestment.com:9443"
+            self.base_url = "https://openapi.koreainvestment.com:9443"
 
     def issue_access_token(self):
         """접근토큰발급
         """
         path = "oauth2/tokenP"
-        url = f"{self.BASE_URL}/{path}"
+        url = f"{self.base_url}/{path}"
         headers = {"content-type": "application/json"}
         data = {
             "grant_type": "client_credentials",
@@ -313,7 +320,7 @@ class KoreaInvestment:
             "appsecret": self.api_secret
         }
         resp = requests.post(url, headers=headers, data=json.dumps(data))
-        self.access_token = 'Bearer {}'.format(resp.json()["access_token"])
+        self.access_token = f'Bearer {resp.json()["access_token"]}'
 
     def issue_hashkey(self, data: dict):
         """해쉬키 발급
@@ -323,7 +330,7 @@ class KoreaInvestment:
             _type_: _description_
         """
         path = "uapi/hashkey"
-        url = f"{self.BASE_URL}/{path}"
+        url = f"{self.base_url}/{path}"
         headers = {
            "content-type": "application/json",
            "appKey": self.api_key,
@@ -357,7 +364,7 @@ class KoreaInvestment:
             dict: API 개발 가이드 참조
         """
         path = "uapi/domestic-stock/v1/quotations/inquire-price"
-        url = f"{self.BASE_URL}/{path}"
+        url = f"{self.base_url}/{path}"
         headers = {
            "content-type": "application/json",
            "authorization": self.access_token,
@@ -380,7 +387,7 @@ class KoreaInvestment:
             dict: API 개발 가이드 참조
         """
         path = "uapi/overseas-price/v1/quotations/price"
-        url = f"{self.BASE_URL}/{path}"
+        url = f"{self.base_url}/{path}"
         headers = {
            "content-type": "application/json",
            "authorization": self.access_token,
@@ -408,7 +415,7 @@ class KoreaInvestment:
             dict: _description_
         """
         path = "uapi/domestic-stock/v1/quotations/inquire-daily-price"
-        url = f"{self.BASE_URL}/{path}"
+        url = f"{self.base_url}/{path}"
         headers = {
            "content-type": "application/json",
            "authorization": self.access_token,
@@ -449,7 +456,7 @@ class KoreaInvestment:
             dict: _description_
         """
         path = "uapi/domestic-stock/v1/trading/inquire-balance"
-        url = f"{self.BASE_URL}/{path}"
+        url = f"{self.base_url}/{path}"
         headers = {
            "content-type": "application/json",
            "authorization": self.access_token,
@@ -481,7 +488,7 @@ class KoreaInvestment:
             dict: _description_
         """
         path = "/uapi/overseas-stock/v1/trading/inquire-present-balance"
-        url = f"{self.BASE_URL}/{path}"
+        url = f"{self.base_url}/{path}"
 
         headers = {
            "content-type": "application/json",
@@ -510,7 +517,7 @@ class KoreaInvestment:
             dict: _description_
         """
         path = "/uapi/overseas-stock/v1/trading/inquire-balance"
-        url = f"{self.BASE_URL}/{path}"
+        url = f"{self.base_url}/{path}"
 
         if self.exchange in ['나스닥', '뉴욕', '아멕스']:
             tr_id = "JTTT3012R"
@@ -538,9 +545,23 @@ class KoreaInvestment:
         res = requests.get(url, headers=headers, params=params)
         return res.json()
 
-    def create_order(self, side: str, acc_no: str, ticker: str, price: int, quantity: int, order_type: str) -> dict:
+    def create_order(self, side: str, acc_no: str, ticker: str, price: int,
+                     quantity: int, order_type: str) -> dict:
+        """주문 함수
+
+        Args:
+            side (str): _description_
+            acc_no (str): _description_
+            ticker (str): _description_
+            price (int): _description_
+            quantity (int): _description_
+            order_type (str): _description_
+
+        Returns:
+            dict: _description_
+        """
         path = "uapi/domestic-stock/v1/trading/order-cash"
-        url = f"{self.BASE_URL}/{path}"
+        url = f"{self.base_url}/{path}"
 
         tr_id = "TTTC0802U" if side == "buy" else "TTTC0801U"
         unpr = "0" if order_type == "01" else str(price)
@@ -567,9 +588,29 @@ class KoreaInvestment:
         return resp.json()
 
     def create_market_buy_order(self, acc_no: str, ticker: str, quantity: int) -> dict:
+        """시장가 매수
+
+        Args:
+            acc_no (str): _description_
+            ticker (str): _description_
+            quantity (int): _description_
+
+        Returns:
+            dict: _description_
+        """
         return self.create_order("buy", acc_no, ticker, 0, quantity, "01")
 
     def create_market_sell_order(self, acc_no: str, ticker: str, quantity: int) -> dict:
+        """시장가 매도
+
+        Args:
+            acc_no (str): _description_
+            ticker (str): _description_
+            quantity (int): _description_
+
+        Returns:
+            dict: _description_
+        """
         return self.create_order("sell", acc_no, ticker, 0, quantity, "01")
 
     def create_limit_buy_order(self, acc_no: str, ticker: str, price: int, quantity: int) -> dict:
@@ -592,21 +633,77 @@ class KoreaInvestment:
         return resp
 
     def create_limit_sell_order(self, acc_no: str, ticker: str, price: int, quantity: int) -> dict:
+        """지정가 매도
+
+        Args:
+            acc_no (str): _description_
+            ticker (str): _description_
+            price (int): _description_
+            quantity (int): _description_
+
+        Returns:
+            dict: _description_
+        """
         if self.exchange == "서울":
             resp = self.create_order("sell", acc_no, ticker, price, quantity, "00")
         else:
             resp = self.create_oversea_order("sell", acc_no, ticker, price, quantity, "00")
         return resp
 
-    def cancel_order(self, acc_no: str, order_code: str, order_id: str, order_type: str, price: int, quantity: int):
-        return self.update_order(acc_no, order_code, order_id, order_type, price, quantity, is_change=False)
+    def cancel_order(self, acc_no: str, order_code: str, order_id: str, order_type: str,
+                     price: int, quantity: int):
+        """주문 취소
 
-    def modify_order(self, acc_no: str, order_code: str, order_id: str, order_type: str, price: int, quantity: int):
+        Args:
+            acc_no (str): _description_
+            order_code (str): _description_
+            order_id (str): _description_
+            order_type (str): _description_
+            price (int): _description_
+            quantity (int): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        return self.update_order(
+            acc_no, order_code, order_id, order_type, price, quantity, is_change=False
+        )
+
+    def modify_order(self, acc_no: str, order_code: str, order_id: str, order_type: str,
+                     price: int, quantity: int):
+        """_summary_
+
+        Args:
+            acc_no (str): _description_
+            order_code (str): _description_
+            order_id (str): _description_
+            order_type (str): _description_
+            price (int): _description_
+            quantity (int): _description_
+
+        Returns:
+            _type_: _description_
+        """
         return self.update_order(acc_no, order_code, order_id, order_type, price, quantity)
 
-    def update_order(self, acc_no: str, order_code: str, order_id: str, order_type: str, price: int, quantity: int, is_change: bool = True):
+    def update_order(self, acc_no: str, order_code: str, order_id: str, order_type: str, price: int,
+                     quantity: int, is_change: bool = True):
+        """_summary_
+
+        Args:
+            acc_no (str): _description_
+            order_code (str): _description_
+            order_id (str): _description_
+            order_type (str): _description_
+            price (int): _description_
+            quantity (int): _description_
+            is_change (bool, optional): _description_. Defaults to True.
+
+        Returns:
+            _type_: _description_
+        """
         path = "uapi/domestic-stock/v1/trading/order-rvsecncl"
-        url = f"{self.BASE_URL}/{path}"
+        url = f"{self.base_url}/{path}"
         param = "01" if is_change else "02"
         data = {
             "CANO": acc_no,
@@ -640,7 +737,7 @@ class KoreaInvestment:
             _type_: _description_
         """
         path = "uapi/domestic-stock/v1/trading/inquire-psbl-rvsecncl"
-        url = f"{self.BASE_URL}/{path}"
+        url = f"{self.base_url}/{path}"
 
         fk100 = param["CTX_AREA_FK100"]
         nk100 = param["CTX_AREA_NK100"]
@@ -667,9 +764,23 @@ class KoreaInvestment:
         resp = requests.get(url, headers=headers, params=params)
         return resp.json()
 
-    def create_oversea_order(self, side: str, acc_no: str, ticker: str, price: int, quantity: int, order_type: str) -> dict:
+    def create_oversea_order(self, side: str, acc_no: str, ticker: str, price: int,
+                             quantity: int, order_type: str) -> dict:
+        """_summary_
+
+        Args:
+            side (str): _description_
+            acc_no (str): _description_
+            ticker (str): _description_
+            price (int): _description_
+            quantity (int): _description_
+            order_type (str): _description_
+
+        Returns:
+            dict: _description_
+        """
         path = "uapi/overseas-stock/v1/trading/order"
-        url = f"{self.BASE_URL}/{path}"
+        url = f"{self.base_url}/{path}"
 
         if side == "buy":
             tr_id = "JTTT1002U"
@@ -717,8 +828,8 @@ if __name__ == "__main__":
     # resp = broker.fetch_daily_price("005930")
     # pprint.pprint(resp)
     #
-    resp = broker.fetch_balance("63398082")
-    pprint.pprint(resp)
+    b = broker.fetch_balance("63398082")
+    pprint.pprint(b)
     #
     # resp = broker.create_market_buy_order("63398082", "005930", 10)
     # pprint.pprint(resp)
@@ -730,7 +841,8 @@ if __name__ == "__main__":
     # print(resp)
 
     # 실시간주식 체결가
-    #broker_ws = KoreaInvestmentWS(key, secret, ["H0STCNT0", "H0STASP0"], ["005930", "000660"], user_id="idjhh82")
+    #broker_ws = KoreaInvestmentWS(
+    #   key, secret, ["H0STCNT0", "H0STASP0"], ["005930", "000660"], user_id="idjhh82")
     #broker_ws.start()
     #while True:
     #    data_ = broker_ws.get()

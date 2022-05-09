@@ -1,5 +1,8 @@
-import mojito
+"""
+나스닥 지정가 매수
+"""
 import pprint
+import mojito
 
 with open("../../koreainvestment.key", encoding='utf-8') as f:
     lines = f.readlines()
