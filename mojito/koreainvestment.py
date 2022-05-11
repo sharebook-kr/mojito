@@ -5,6 +5,7 @@ import json
 import asyncio
 from base64 import b64decode
 from multiprocessing import Process, Queue
+import datetime
 import requests
 import websockets
 from Crypto.Cipher import AES
@@ -289,7 +290,8 @@ class KoreaInvestment:
         Args:
             api_key (str): 발급받은 API key
             api_secret (str): 발급받은 API secret
-            exchange (str): "나스닥", "뉴욕", "아멕스", "홍콩", "상해", "심천", "도쿄"
+            exchange (str): "나스닥", "뉴욕", "아멕스", "홍콩", "상해", "심천", "도쿄",
+                            "하노이", "호치민"
         """
         self.base_url = "https://openapi.koreainvestment.com:9443"
         self.api_key = api_key
@@ -810,6 +812,44 @@ class KoreaInvestment:
         resp = requests.post(url, headers=headers, data=json.dumps(data))
         return resp.json()
 
+    def fetch_ohlcv(self, ticker: str, timeframe:str='1d', to:str="",
+                    adjusted:bool=True):
+        """해외주식현재가-해외주식기간별시세
+           해외주식의 기반별 시세를 확인하는 API
+
+        Args:
+            ticker (str): 종목코드
+            timeframe (str, optional): '1d', '1w', '1m'
+            since (str, optional): YYYYMMDD
+            adjusted (bool, optional): False: 수정주가 미반영, True: 수정주가 반영
+        """
+        path = "/uapi/overseas-price/v1/quotations/dailyprice"
+        url = f"{self.base_url}/{path}"
+
+        headers = {
+           "content-type": "application/json",
+           "authorization": self.access_token,
+           "appKey": self.api_key,
+           "appSecret": self.api_secret,
+           "tr_id": "HHDFS76240000"
+        }
+
+        timeframe_lookup = {
+            '1d': "0",
+            '1w': "1",
+            '1m': "2"
+        }
+
+        params = {
+            "AUTH": "",
+            "EXCD": EXCHANGE_CODE.get(self.exchange, "NAS"),
+            "SYMB": ticker,
+            "GUBN": timeframe_lookup.get(timeframe, "1d"),
+            "BYMD": to,
+            "MODP": 1 if adjusted else 0
+        }
+        resp = requests.get(url, headers=headers, params=params)
+        return resp.json()
 
 if __name__ == "__main__":
     with open("../koreainvestment.key", encoding='utf-8') as f:
@@ -819,17 +859,17 @@ if __name__ == "__main__":
     secret = lines[1].strip()
 
     #broker = KoreaInvestment(key, secret)
-    broker = KoreaInvestment(key, secret, exchange="나스닥")
+    #broker = KoreaInvestment(key, secret, exchange="나스닥")
 
-    import pprint
+    #import pprint
     # resp = broker.fetch_price("005930")
     # pprint.pprint(resp)
     #
     # resp = broker.fetch_daily_price("005930")
     # pprint.pprint(resp)
     #
-    b = broker.fetch_balance("63398082")
-    pprint.pprint(b)
+    #b = broker.fetch_balance("63398082")
+    #pprint.pprint(b)
     #
     # resp = broker.create_market_buy_order("63398082", "005930", 10)
     # pprint.pprint(resp)
@@ -866,3 +906,10 @@ if __name__ == "__main__":
     # for i in range(3):
     #    data = broker_ws.get()
     #    print(data)
+
+    import pprint
+    broker = KoreaInvestment(key, secret, exchange="나스닥")
+    resp_ohlcv = broker.fetch_ohlcv("TSLA", '1d', to="")
+    print(len(resp_ohlcv['output2']))
+    pprint.pprint(resp_ohlcv['output2'][0])
+    pprint.pprint(resp_ohlcv['output2'][-1])
