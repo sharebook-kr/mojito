@@ -2,6 +2,7 @@
 한국투자증권 python wrapper
 '''
 import json
+import pickle
 import asyncio
 from base64 import b64decode
 from multiprocessing import Process, Queue
@@ -298,7 +299,11 @@ class KoreaInvestment:
         self.api_secret = api_secret
         self.exchange = exchange
         self.access_token = None
-        self.issue_access_token()
+
+        if self.check_access_token():
+            self.load_access_token()
+        else:
+            self.issue_access_token()
 
     def set_sandbox_mode(self, mode: bool = True):
         """테스트(모의투자) 서버 사용 설정
@@ -311,7 +316,7 @@ class KoreaInvestment:
             self.base_url = "https://openapi.koreainvestment.com:9443"
 
     def issue_access_token(self):
-        """접근토큰발급
+        """OAuth인증/접근토큰발급
         """
         path = "oauth2/tokenP"
         url = f"{self.base_url}/{path}"
@@ -321,8 +326,45 @@ class KoreaInvestment:
             "appkey": self.api_key,
             "appsecret": self.api_secret
         }
+
+        now = datetime.datetime.now()
         resp = requests.post(url, headers=headers, data=json.dumps(data))
-        self.access_token = f'Bearer {resp.json()["access_token"]}'
+        resp_data = resp.json()
+        self.access_token = f'Bearer {resp_data["access_token"]}'
+
+        resp_data['timestamp'] = int(now.timestamp()) + resp_data["expires_in"]
+        with open("token.dat", "wb") as f:
+            pickle.dump(resp_data, f)
+
+    def check_access_token(self):
+        """check access token
+
+        Returns:
+            Bool: True: token is valid, False: token is not valid
+        """
+        try:
+            f = open("token.dat", "rb")
+            data = pickle.load(f)
+            f.close()
+
+            expire_epoch = data['timestamp']
+            now_epoch = int(datetime.datetime.now().timestamp())
+            status = False
+
+            if now_epoch - expire_epoch > 0:
+                status = False
+            else:
+                status = True
+            return status
+        except IOError:
+            return False
+
+    def load_access_token(self):
+        """load access token
+        """
+        with open("token.dat", "rb") as f:
+            data = pickle.load(f)
+            self.access_token = f'Bearer {data["access_token"]}'
 
     def issue_hashkey(self, data: dict):
         """해쉬키 발급
@@ -852,18 +894,18 @@ class KoreaInvestment:
         return resp.json()
 
 if __name__ == "__main__":
-    with open("../koreainvestment.key", encoding='utf-8') as f:
-        lines = f.readlines()
+    with open("../koreainvestment.key", encoding='utf-8') as key_file:
+        lines = key_file.readlines()
 
     key = lines[0].strip()
     secret = lines[1].strip()
 
-    #broker = KoreaInvestment(key, secret)
+    broker = KoreaInvestment(key, secret)
     #broker = KoreaInvestment(key, secret, exchange="나스닥")
 
-    #import pprint
-    # resp = broker.fetch_price("005930")
-    # pprint.pprint(resp)
+    import pprint
+    resp = broker.fetch_price("005930")
+    pprint.pprint(resp)
     #
     # resp = broker.fetch_daily_price("005930")
     # pprint.pprint(resp)
@@ -907,9 +949,9 @@ if __name__ == "__main__":
     #    data = broker_ws.get()
     #    print(data)
 
-    import pprint
-    broker = KoreaInvestment(key, secret, exchange="나스닥")
-    resp_ohlcv = broker.fetch_ohlcv("TSLA", '1d', to="")
-    print(len(resp_ohlcv['output2']))
-    pprint.pprint(resp_ohlcv['output2'][0])
-    pprint.pprint(resp_ohlcv['output2'][-1])
+    #import pprint
+    #broker = KoreaInvestment(key, secret, exchange="나스닥")
+    #resp_ohlcv = broker.fetch_ohlcv("TSLA", '1d', to="")
+    #print(len(resp_ohlcv['output2']))
+    #pprint.pprint(resp_ohlcv['output2'][0])
+    #pprint.pprint(resp_ohlcv['output2'][-1])
