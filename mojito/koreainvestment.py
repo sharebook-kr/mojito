@@ -291,8 +291,8 @@ class KoreaInvestment:
         Args:
             api_key (str): 발급받은 API key
             api_secret (str): 발급받은 API secret
-            exchange (str): "나스닥", "뉴욕", "아멕스", "홍콩", "상해", "심천", "도쿄",
-                            "하노이", "호치민"
+            exchange (str): "서울", "나스닥", "뉴욕", "아멕스", "홍콩", "상해", "심천",
+                            "도쿄", "하노이", "호치민"
         """
         self.base_url = "https://openapi.koreainvestment.com:9443"
         self.api_key = api_key

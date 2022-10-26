@@ -4,7 +4,7 @@ import setuptools
 
 install_requires = [
     'requests',
-    'websockets==9.1',
+    'websockets',
     'pycryptodome'
 ]
 
