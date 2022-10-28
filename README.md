@@ -11,6 +11,16 @@
 $ pip install mojito2
 ```
 
+# 지원 API 
+
+| 카테고리 | 기능 | 함수 |
+|--------|-----|-----|
+| OAuth 인증 | Hasheky | `issue_hashkey()` |
+| OAuth 인증 | 접근토근발급(P) | `issue_access_token()` |
+| OAuth 인증 | 접근토근폐기(P) | 미지원 |
+| 국내주식주문 | 주식주문(현금) |  |
+| 국내주식주문 | 주식잔고조회 | `fetch_balance()` |
+
 # 사용법
 ## 한국투자증권
 
