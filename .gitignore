@@ -129,3 +129,11 @@ dmypy.json
 .pyre/
 koreainvestment.key
 mojito/token.dat
+examples/koreainvestment/*.xlsx
+examples/koreainvestment/*.mst
+examples/koreainvestment/*.tmp
+examples/koreainvestment/*.zip
+examples/koreainvestment/token.dat
+mock.key
+examples/koreainvestment\kospi_code_part1.tmp
+examples/koreainvestment\kospi_code_part2.tmp

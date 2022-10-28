@@ -7,12 +7,13 @@ with open("../../koreainvestment.key") as f:
 
 key = lines[0].strip()
 secret = lines[1].strip()
-acc_no="63398082"
 
 broker = mojito.KoreaInvestment(
-    api_key=key,
-    api_secret=secret,
-    acc_no=acc_no
+    api_key = key,
+    api_secret = secret,
+    acc_no = "63398082"
 )
-resp = broker.fetch_balance()
-pprint.pprint(resp)
+
+# fetch_tickers
+tickers = broker.fetch_kospi_tickers()
+tickers.to_excel("kosi_code.xlsx", index=False)
