@@ -502,11 +502,11 @@ class KoreaInvestment:
         """
         if self.exchange == "서울":
             df = self.fetch_kospi_tickers()
-            kospi_df = df[['단축코드', '한글명', '그룹코드']]
+            kospi_df = df[['단축코드', '한글명', '그룹코드']].copy()
             kospi_df['시장'] = '코스피'
 
             df = self.fetch_kosdaq_tickers()
-            kosdaq_df = df[['단축코드', '한글명', '그룹코드']]
+            kosdaq_df = df[['단축코드', '한글명', '그룹코드']].copy()
             kosdaq_df['시장'] = '코스닥'
 
             df = pd.concat([kospi_df, kosdaq_df], axis=0)
@@ -722,14 +722,29 @@ class KoreaInvestment:
             dict: response data
         """
         if self.exchange == '서울':
-            return self.fetch_balance_domestic(self.acc_no)
-        else:
-            return self.fetch_balance_oversea(self.acc_no)
+            output = {}
 
-    def fetch_balance_domestic(self, acc_no: str) -> dict:
-        """주식잔고조회
+            data = self.fetch_balance_domestic()
+            output['output1'] = data['output1']
+            output['output2'] = data['output2']
+
+            while data['tr_cont'] == 'M':
+                fk100 = data['ctx_area_fk100']
+                nk100 = data['ctx_area_nk100']
+
+                data = self.fetch_balance_domestic(fk100, nk100)
+                output['output1'].extend(data['output1'])
+                output['output2'].extend(data['output2'])
+
+            return output
+        else:
+            return self.fetch_balance_oversea()
+
+    def fetch_balance_domestic(self, ctx_area_fk100: str = "", ctx_area_nk100: str = "") -> dict:
+        """국내주식주문/주식잔고조회
         Args:
-            acc_no (str): 계좌번호 앞8자리
+            ctx_area_fk100 (str): 연속조회검색조건100
+            ctx_areak_nk100 (str): 연속조회키100
         Returns:
             dict: _description_
         """
@@ -743,7 +758,7 @@ class KoreaInvestment:
            "tr_id": "VTTC8434R" if self.mock else "TTTC8434R"
         }
         params = {
-            'CANO': acc_no,
+            'CANO': self.acc_no,
             'ACNT_PRDT_CD': '01',
             'AFHR_FLPR_YN': 'N',
             'OFL_YN': 'N',
@@ -752,16 +767,18 @@ class KoreaInvestment:
             'FUND_STTL_ICLD_YN': 'N',
             'FNCG_AMT_AUTO_RDPT_YN': 'N',
             'PRCS_DVSN': '01',
-            'CTX_AREA_FK100': '',
-            'CTX_AREA_NK100': ''
+            'CTX_AREA_FK100': ctx_area_fk100,
+            'CTX_AREA_NK100': ctx_area_nk100
         }
-        res = requests.get(url, headers=headers, params=params)
-        return res.json()
 
-    def fetch_balance_oversea(self, acc_no: str) -> dict:
+        res = requests.get(url, headers=headers, params=params)
+        data = res.json()
+        data['tr_cont'] = res.headers['tr_cont']
+        return data
+
+    def fetch_balance_oversea(self) -> dict:
         """해외주식 잔고조회
         Args:
-            acc_no (str): 계좌번호 앞8자리
         Returns:
             dict: _description_
         """
@@ -777,7 +794,7 @@ class KoreaInvestment:
         }
 
         params = {
-            'CANO': acc_no,
+            'CANO': self.acc_no,
             'ACNT_PRDT_CD': '01',
             "WCRC_FRCR_DVSN_CD": "02",
             "NATN_CD": "840",
@@ -825,7 +842,7 @@ class KoreaInvestment:
 
     def create_order(self, side: str, ticker: str, price: int,
                      quantity: int, order_type: str) -> dict:
-        """주문 함수
+        """국내주식주문/주식주문(현금)
 
         Args:
             side (str): _description_
@@ -840,7 +857,11 @@ class KoreaInvestment:
         path = "uapi/domestic-stock/v1/trading/order-cash"
         url = f"{self.base_url}/{path}"
 
-        tr_id = "TTTC0802U" if side == "buy" else "TTTC0801U"
+        if self.mock:
+            tr_id = "VTTC0802U" if side == "buy" else "VTTC0801U"
+        else:
+            tr_id = "TTTC0802U" if side == "buy" else "TTTC0801U"
+
         unpr = "0" if order_type == "01" else str(price)
 
         data = {

@@ -12,9 +12,8 @@ acc_no = "50074923"
 broker = mojito.KoreaInvestment(
     api_key = key,
     api_secret = secret,
-    acc_no = acc_no
+    acc_no = acc_no,
     mock = True
 )
 
 resp = broker.fetch_balance()
-pprint.pprint(resp)
