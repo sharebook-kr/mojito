@@ -6,12 +6,12 @@ with open("../../koreainvestment.key") as f:
 
 key = lines[0].strip()
 secret = lines[1].strip()
-acc_no = "63398082"
+ACC_NO = "63398082"
 
 broker = mojito.KoreaInvestment(
     api_key=key,
     api_secret=secret,
-    acc_no=acc_no
+    acc_no=ACC_NO
 )
 
 resp = broker.fetch_price("005930")

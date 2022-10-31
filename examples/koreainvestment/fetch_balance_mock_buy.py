@@ -1,5 +1,4 @@
 # 주식잔고조회
-from matplotlib import ticker
 import mojito
 import pprint
 import time
