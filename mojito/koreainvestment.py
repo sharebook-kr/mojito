@@ -295,7 +295,7 @@ class KoreaInvestment:
         Args:
             api_key (str): 발급받은 API key
             api_secret (str): 발급받은 API secret
-            acc_no (str): 계좌번호 체계의 앞 8자리
+            acc_no (str): 계좌번호 체계의 앞 8자리-뒤 2자리
             exchange (str): "서울", "나스닥", "뉴욕", "아멕스", "홍콩", "상해", "심천",
                             "도쿄", "하노이", "호치민"
             mock (bool): True (mock trading), False (real trading)
@@ -304,7 +304,12 @@ class KoreaInvestment:
         self.set_base_url(mock)
         self.api_key = api_key
         self.api_secret = api_secret
+
+        # account number
         self.acc_no = acc_no
+        self.acc_no_prefix = acc_no.split('-')[0]
+        self.acc_no_postfix = acc_no.split('-')[1]
+
         self.exchange = exchange
 
         # access token
@@ -758,8 +763,8 @@ class KoreaInvestment:
            "tr_id": "VTTC8434R" if self.mock else "TTTC8434R"
         }
         params = {
-            'CANO': self.acc_no,
-            'ACNT_PRDT_CD': '01',
+            'CANO': self.acc_no_prefix,
+            'ACNT_PRDT_CD': self.acc_no_postfix,
             'AFHR_FLPR_YN': 'N',
             'OFL_YN': 'N',
             'INQR_DVSN': '01',
@@ -794,8 +799,8 @@ class KoreaInvestment:
         }
 
         params = {
-            'CANO': self.acc_no,
-            'ACNT_PRDT_CD': '01',
+            'CANO': self.acc_no_prefix,
+            'ACNT_PRDT_CD': self.acc_no_postfix,
             "WCRC_FRCR_DVSN_CD": "02",
             "NATN_CD": "840",
             "TR_MKET_CD": "01",
@@ -804,10 +809,9 @@ class KoreaInvestment:
         res = requests.get(url, headers=headers, params=params)
         return res.json()
 
-    def fetch_balance_oversea2(self, acc_no: str) -> dict:
+    def fetch_balance_oversea2(self) -> dict:
         """해외주식 잔고조회
         Args:
-            acc_no (str): 계좌번호 앞8자리
         Returns:
             dict: _description_
         """
@@ -830,8 +834,8 @@ class KoreaInvestment:
         exchange_cd = EXCHANGE_CODE2[self.exchange]
         currency_cd = CURRENCY_CODE[self.exchange]
         params = {
-            'CANO': acc_no,
-            'ACNT_PRDT_CD': '01',
+            'CANO': self.acc_no_prefix,
+            'ACNT_PRDT_CD': self.acc_no_postfix,
             'OVRS_EXCG_CD': exchange_cd,
             'TR_CRCY_CD': currency_cd,
             'CTX_AREA_FK200': "",
@@ -865,8 +869,8 @@ class KoreaInvestment:
         unpr = "0" if order_type == "01" else str(price)
 
         data = {
-            "CANO": self.acc_no,
-            "ACNT_PRDT_CD": "01",
+            "CANO": self.acc_no_prefix,
+            "ACNT_PRDT_CD": self.acc_no_postfix,
             "PDNO": ticker,
             "ORD_DVSN": order_type,
             "ORD_QTY": str(quantity),
@@ -967,7 +971,6 @@ class KoreaInvestment:
         """_summary_
 
         Args:
-            acc_no (str): _description_
             order_code (str): _description_
             order_id (str): _description_
             order_type (str): _description_
@@ -998,8 +1001,8 @@ class KoreaInvestment:
         url = f"{self.base_url}/{path}"
         param = "01" if is_change else "02"
         data = {
-            "CANO": self.acc_no,
-            "ACNT_PRDT_CD": "01",
+            "CANO": self.acc_no_prefix,
+            "ACNT_PRDT_CD": self.acc_no_postfix,
             "KRX_FWDG_ORD_ORGNO": order_code,
             "ORGN_ODNO": order_id,
             "ORD_DVSN": order_type,
@@ -1044,8 +1047,8 @@ class KoreaInvestment:
         }
 
         params = {
-            "CANO": self.acc_no,
-            "ACNT_PRDT_CD": "01",
+            "CANO": self.acc_no_prefix,
+            "ACNT_PRDT_CD": self.acc_no_postfix,
             "CTX_AREA_FK100": fk100,
             "CTX_AREA_NK100": nk100,
             "INQR_DVSN_1": type1,
@@ -1079,8 +1082,8 @@ class KoreaInvestment:
 
         exchange_cd = EXCHANGE_CODE2[self.exchange]
         data = {
-            "CANO": self.acc_no,
-            "ACNT_PRDT_CD": "01",
+            "CANO": self.acc_no_prefix,
+            "ACNT_PRDT_CD": self.acc_no_postfix,
             "OVRS_EXCG_CD": exchange_cd,
             "PDNO": ticker,
             "ORD_QTY": str(quantity),
@@ -1145,7 +1148,7 @@ if __name__ == "__main__":
 
     key = lines[0].strip()
     secret = lines[1].strip()
-    account_number = "63398082"
+    account_number = "63398082-01"
 
     broker = KoreaInvestment(
         api_key=key,

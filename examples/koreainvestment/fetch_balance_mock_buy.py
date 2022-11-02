@@ -8,7 +8,7 @@ with open("../../mock.key") as f:
 
 key = lines[0].strip()
 secret = lines[1].strip()
-acc_no = "50074923"
+acc_no = "50074923-01"
 
 broker = mojito.KoreaInvestment(
     api_key=key,

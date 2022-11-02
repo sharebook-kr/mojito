@@ -11,7 +11,7 @@ secret = lines[1].strip()
 broker = mojito.KoreaInvestment(
     api_key = key,
     api_secret = secret,
-    acc_no = "63398082"
+    acc_no = "63398082-01"
 )
 
 # fetch_tickers
