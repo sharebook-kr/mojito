@@ -14,5 +14,9 @@ broker = mojito.KoreaInvestment(
     acc_no=ACC_NO
 )
 
-resp = broker.fetch_daily_price("005930")
+resp = broker.fetch_ohlcv(
+    ticker="005930",
+    timeframe='D',
+    adj_price=True
+)
 pprint.pprint(resp)

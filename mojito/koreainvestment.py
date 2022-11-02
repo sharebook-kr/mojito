@@ -470,11 +470,87 @@ class KoreaInvestment:
         resp = requests.get(url, headers=headers, params=params)
         return resp.json()
 
-    def fetch_daily_price(self, ticker: str, period: str = 'D', adj_price: bool = True) -> dict:
-        """주식 현재가 일자별
+    def fetch_today_1m_ohlcv(self, ticker: str, to: str=""):
+        """국내주식시세/주식당일분봉조회
+
+        Args:
+            ticker (str): 6자리 종목코드
+            to (str, optional): "HH:MM:00". Defaults to "".
+        """
+        result = {}
+        now = datetime.datetime.now()
+
+        if to == "":
+            to = now.strftime("%H%M%S")
+
+            # kospi market end time
+            if to > "153000":
+                to = "153000"
+
+        output = self._fetch_today_1m_ohlcv(ticker, to)
+        output2 = output['output2']
+        last_hour = output2[-1]['stck_cntg_hour']
+
+        result['output1'] = output['output1']
+        result['output2'] = output2
+
+        while last_hour > "090100":
+            # last minute
+            dt1 = datetime.datetime(
+                year=now.year,
+                month=now.month,
+                day=now.day,
+                hour=int(last_hour[:2]),
+                minute=int(last_hour[2:4])
+            )
+            delta = datetime.timedelta(minutes=1)
+
+            # 1 minute ago
+            dt2 = dt1 - delta
+            to = dt2.strftime("%H%M%S")
+
+            # request 1minute ohlcv
+            output = self._fetch_today_1m_ohlcv(ticker, to)
+            output2 = output['output2']
+            last_hour = output2[-1]['stck_cntg_hour']
+
+            result['output2'].extend(output2)
+
+        return result
+
+    def _fetch_today_1m_ohlcv(self, ticker: str, to: str):
+        """국내주식시세/주식당일분봉조회
+
+        Args:
+            ticker (str): 6자리 종목코드
+            to (str): "HH:MM:SS"
+        """
+        path = "/uapi/domestic-stock/v1/quotations/inquire-time-itemchartprice"
+        url = f"{self.base_url}/{path}"
+        headers = {
+           "content-type": "application/json; charset=utf-8",
+           "authorization": self.access_token,
+           "appKey": self.api_key,
+           "appSecret": self.api_secret,
+           "tr_id": "FHKST03010200",
+           "tr_cont": "",
+        }
+
+        params = {
+            "fid_etc_cls_code": "",
+            "fid_cond_mrkt_div_code": "J",
+            "fid_input_iscd": ticker,
+            "fid_input_hour_1": to,
+            "fid_pw_data_incu_yn": "Y"
+        }
+        res = requests.get(url, headers=headers, params=params)
+        return res.json()
+
+    def fetch_ohlcv(self, ticker: str, timeframe: str = 'D', adj_price: bool = True) -> dict:
+        """국내주식시세/주식 현재가 일자별
         Args:
             ticker (str): 종목코드
-            period (str): "D" (일), "W" (주), "M" (월)
+            timeframe (str): "D" (일), "W" (주), "M" (월)
             adj_price (bool, optional): True: 수정주가 반영, False: 수정주가 미반영. Defaults to True.
         Returns:
             dict: _description_
@@ -494,7 +570,7 @@ class KoreaInvestment:
             "fid_cond_mrkt_div_code": "J",
             "fid_input_iscd": ticker,
             "fid_org_adj_prc": adj_param,
-            "fid_period_div_code": period
+            "fid_period_div_code": timeframe
         }
         res = requests.get(url, headers=headers, params=params)
         return res.json()
@@ -1103,7 +1179,7 @@ class KoreaInvestment:
         resp = requests.post(url, headers=headers, data=json.dumps(data))
         return resp.json()
 
-    def fetch_ohlcv(self, ticker: str, timeframe:str='1d', to:str="",
+    def fetch_ohlcv2(self, ticker: str, timeframe:str='1d', to:str="",
                     adjusted:bool=True):
         """해외주식현재가-해외주식기간별시세
            해외주식의 기반별 시세를 확인하는 API
@@ -1143,24 +1219,28 @@ class KoreaInvestment:
         return resp.json()
 
 if __name__ == "__main__":
+    import pprint
+
     with open("../koreainvestment.key", encoding='utf-8') as key_file:
         lines = key_file.readlines()
 
     key = lines[0].strip()
     secret = lines[1].strip()
-    account_number = "63398082-01"
+    ACC_NO = "63398082-01"
 
     broker = KoreaInvestment(
         api_key=key,
         api_secret=secret,
-        acc_no=account_number
+        acc_no=ACC_NO
     )
 
-    #broker = KoreaInvestment(key, secret, exchange="나스닥")
+    minute1_ohlcv = broker.fetch_today_1m_ohlcv("005930")
+    pprint.pprint(minute1_ohlcv)
 
-    import pprint
-    resp = broker.fetch_price("005930")
-    pprint.pprint(resp)
+    #broker = KoreaInvestment(key, secret, exchange="나스닥")
+    #import pprint
+    #resp = broker.fetch_price("005930")
+    #pprint.pprint(resp)
     #
     # resp = broker.fetch_daily_price("005930")
     # pprint.pprint(resp)
