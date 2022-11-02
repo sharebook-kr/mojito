@@ -34,8 +34,9 @@ import pprint
 
 key = "발급받은 API KEY"
 secret = "발급받은 API SECRET"
+acc_no = "계좌번호8자라"
 
-broker = mojito.KoreaInvestment(api_key=key, api_secret=secret)
+broker = mojito.KoreaInvestment(api_key=key, api_secret=secret, acc_no=acc_no)
 resp = broker.fetch_price("005930")
 pprint.pprint(resp)
 
@@ -49,8 +50,9 @@ import pprint
 
 key = "발급받은 API KEY"
 secret = "발급받은 API SECRET"
+acc_no = "계좌번호8자라"
 
-broker = mojito.KoreaInvestment(api_key=key, api_secret=secret)
+broker = mojito.KoreaInvestment(api_key=key, api_secret=secret, acc_no=acc_no)
 resp = broker.fetch_daily_price("005930")
 pprint.pprint(resp)
 ```
@@ -58,14 +60,14 @@ pprint.pprint(resp)
 잔고 조회 
 
 ```
-resp = broker.fetch_balance("00000000") # 계좌번호 8자리
+resp = broker.fetch_balance()
 pprint.pprint(resp)
 ```
 
 주문 
 
 ```
-resp = broker.create_market_buy_order("00000000", "005930", 10) # 계좌번호 8자리, 삼성전자, 10주, 시장
+resp = broker.create_market_buy_order("005930", 10) # 삼성전자, 10주, 시장가
 pprint.pprint(resp)
 ```
 
@@ -81,15 +83,15 @@ pprint.pprint(resp)
 주문 취소
 
 ```
-resp = broker.cancel_order("00000000", "91252", "0000117057", "00", 60000, 5, "Y") # 계좌번호, KRX_FWDG_ORD_ORGNO, ODNO, 지정가 주문, 가격, 수량, 모두 
+resp = broker.cancel_order("91252", "0000117057", "00", 60000, 5, "Y") # KRX_FWDG_ORD_ORGNO, ODNO, 지정가 주문, 가격, 수량, 모두 
 print(resp)
 ```
 
 미국주식 주문
 
 ```
-broker = KoreaInvestment(key, secret, exchange="NASD")
-resp = broker.create_limit_buy_order("63398082", "TQQQ", 35, 1)
+broker = KoreaInvestment(key, secret, acc_no=acc_no, exchange="NASD")
+resp = broker.create_limit_buy_order("TQQQ", 35, 1)
 print(resp)
 ```
 
