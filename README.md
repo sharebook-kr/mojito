@@ -34,7 +34,7 @@ import pprint
 
 key = "발급받은 API KEY"
 secret = "발급받은 API SECRET"
-acc_no = "계좌번호8자라"
+acc_no = "12345678-01"
 
 broker = mojito.KoreaInvestment(api_key=key, api_secret=secret, acc_no=acc_no)
 resp = broker.fetch_price("005930")
@@ -50,7 +50,7 @@ import pprint
 
 key = "발급받은 API KEY"
 secret = "발급받은 API SECRET"
-acc_no = "계좌번호8자라"
+acc_no = "12345678-01"
 
 broker = mojito.KoreaInvestment(api_key=key, api_secret=secret, acc_no=acc_no)
 resp = broker.fetch_daily_price("005930")
