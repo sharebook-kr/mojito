@@ -8,20 +8,19 @@ with open("../../koreainvestment.key", encoding="utf-8") as f:
 
 key = lines[0].strip()
 secret = lines[1].strip()
-acc_no = "63398082-01"
+ACC_NO = "63398082-01"
 
 broker = mojito.KoreaInvestment(
     api_key=key,
     api_secret=secret,
-    acc_no=acc_no
+    acc_no=ACC_NO
 )
 
 resp = broker.cancel_order(
-    "91252",
-    "0000026614",
-    "00",
-    65000,
-    1,
-    "Y"
+    order_code="91252",
+    order_id="0000026614",
+    order_type="00",
+    price=65000,
+    quantity=1
 )
 pprint.pprint(resp)

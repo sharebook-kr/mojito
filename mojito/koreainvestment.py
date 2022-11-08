@@ -406,25 +406,25 @@ class KoreaInvestment:
         haskkey = resp.json()["HASH"]
         return haskkey
 
-    def fetch_price(self, ticker: str) -> dict:
+    def fetch_price(self, symbol: str) -> dict:
         """fetch price
 
         Args:
-            ticker (str): 종목코드
+            symbol (str): 종목코드
 
         Returns:
             dict: _description_
         """
         if self.exchange == "서울":
-            return self.fetch_domestic_price("J", ticker)
+            return self.fetch_domestic_price("J", symbol)
         else:
-            return self.fetch_oversea_price(ticker)
+            return self.fetch_oversea_price(symbol)
 
-    def fetch_domestic_price(self, market_code: str, ticker: str) -> dict:
+    def fetch_domestic_price(self, market_code: str, symbol: str) -> dict:
         """주식현재가시세
         Args:
             market_code (str): 시장 분류코드
-            ticker (str): 종목코드
+            symbol (str): 종목코드
         Returns:
             dict: API 개발 가이드 참조
         """
@@ -439,15 +439,15 @@ class KoreaInvestment:
         }
         params = {
             "fid_cond_mrkt_div_code": market_code,
-            "fid_input_iscd": ticker
+            "fid_input_iscd": symbol
         }
         resp = requests.get(url, headers=headers, params=params)
         return resp.json()
 
-    def fetch_oversea_price(self, ticker: str) -> dict:
+    def fetch_oversea_price(self, symbol: str) -> dict:
         """해외주식 현재체결가
         Args:
-            ticker (str): 종목코드
+            symbol (str): 종목코드
         Returns:
             dict: API 개발 가이드 참조
         """
@@ -465,16 +465,16 @@ class KoreaInvestment:
         params = {
             "AUTH": "",
             "EXCD": exchange_code,
-            "SYMB": ticker
+            "SYMB": symbol
         }
         resp = requests.get(url, headers=headers, params=params)
         return resp.json()
 
-    def fetch_today_1m_ohlcv(self, ticker: str, to: str=""):
+    def fetch_today_1m_ohlcv(self, symbol: str, to: str=""):
         """국내주식시세/주식당일분봉조회
 
         Args:
-            ticker (str): 6자리 종목코드
+            symbol (str): 6자리 종목코드
             to (str, optional): "HH:MM:00". Defaults to "".
         """
         result = {}
@@ -487,7 +487,7 @@ class KoreaInvestment:
             if to > "153000":
                 to = "153000"
 
-        output = self._fetch_today_1m_ohlcv(ticker, to)
+        output = self._fetch_today_1m_ohlcv(symbol, to)
         output2 = output['output2']
         last_hour = output2[-1]['stck_cntg_hour']
 
@@ -510,7 +510,7 @@ class KoreaInvestment:
             to = dt2.strftime("%H%M%S")
 
             # request 1minute ohlcv
-            output = self._fetch_today_1m_ohlcv(ticker, to)
+            output = self._fetch_today_1m_ohlcv(symbol, to)
             output2 = output['output2']
             last_hour = output2[-1]['stck_cntg_hour']
 
@@ -518,11 +518,11 @@ class KoreaInvestment:
 
         return result
 
-    def _fetch_today_1m_ohlcv(self, ticker: str, to: str):
+    def _fetch_today_1m_ohlcv(self, symbol: str, to: str):
         """국내주식시세/주식당일분봉조회
 
         Args:
-            ticker (str): 6자리 종목코드
+            symbol (str): 6자리 종목코드
             to (str): "HH:MM:SS"
         """
         path = "/uapi/domestic-stock/v1/quotations/inquire-time-itemchartprice"
@@ -539,17 +539,17 @@ class KoreaInvestment:
         params = {
             "fid_etc_cls_code": "",
             "fid_cond_mrkt_div_code": "J",
-            "fid_input_iscd": ticker,
+            "fid_input_iscd": symbol,
             "fid_input_hour_1": to,
             "fid_pw_data_incu_yn": "Y"
         }
         res = requests.get(url, headers=headers, params=params)
         return res.json()
 
-    def fetch_ohlcv(self, ticker: str, timeframe: str = 'D', adj_price: bool = True) -> dict:
+    def fetch_ohlcv(self, symbol: str, timeframe: str = 'D', adj_price: bool = True) -> dict:
         """국내주식시세/주식 현재가 일자별
         Args:
-            ticker (str): 종목코드
+            symbol (str): 종목코드
             timeframe (str): "D" (일), "W" (주), "M" (월)
             adj_price (bool, optional): True: 수정주가 반영, False: 수정주가 미반영. Defaults to True.
         Returns:
@@ -568,25 +568,25 @@ class KoreaInvestment:
         adj_param = "1" if adj_price else "0"
         params = {
             "fid_cond_mrkt_div_code": "J",
-            "fid_input_iscd": ticker,
+            "fid_input_iscd": symbol,
             "fid_org_adj_prc": adj_param,
             "fid_period_div_code": timeframe
         }
         res = requests.get(url, headers=headers, params=params)
         return res.json()
 
-    def fetch_tickers(self):
-        """fetch tickers from the exchange
+    def fetch_symbols(self):
+        """fetch symbols from the exchange
 
         Returns:
             pd.DataFrame: pandas dataframe
         """
         if self.exchange == "서울":
-            df = self.fetch_kospi_tickers()
+            df = self.fetch_kospi_symbols()
             kospi_df = df[['단축코드', '한글명', '그룹코드']].copy()
             kospi_df['시장'] = '코스피'
 
-            df = self.fetch_kosdaq_tickers()
+            df = self.fetch_kosdaq_symbols()
             kosdaq_df = df[['단축코드', '한글명', '그룹코드']].copy()
             kosdaq_df['시장'] = '코스닥'
 
@@ -768,7 +768,7 @@ class KoreaInvestment:
         os.remove(tmp_fil2)
         return df
 
-    def fetch_kospi_tickers(self):
+    def fetch_kospi_symbols(self):
         """코스피 종목 코드
 
         Returns:
@@ -781,7 +781,7 @@ class KoreaInvestment:
         df = self.parse_kospi_master(base_dir)
         return df
 
-    def fetch_kosdaq_tickers(self):
+    def fetch_kosdaq_symbols(self):
         """코스닥 종목 코드
 
         Returns:
@@ -920,13 +920,13 @@ class KoreaInvestment:
         res = requests.get(url, headers=headers, params=params)
         return res.json()
 
-    def create_order(self, side: str, ticker: str, price: int,
+    def create_order(self, side: str, symbol: str, price: int,
                      quantity: int, order_type: str) -> dict:
         """국내주식주문/주식주문(현금)
 
         Args:
             side (str): _description_
-            ticker (str): _description_
+            symbol (str): symbol
             price (int): _description_
             quantity (int): _description_
             order_type (str): _description_
@@ -947,7 +947,7 @@ class KoreaInvestment:
         data = {
             "CANO": self.acc_no_prefix,
             "ACNT_PRDT_CD": self.acc_no_postfix,
-            "PDNO": ticker,
+            "PDNO": symbol,
             "ORD_DVSN": order_type,
             "ORD_QTY": str(quantity),
             "ORD_UNPR": unpr
@@ -965,35 +965,35 @@ class KoreaInvestment:
         resp = requests.post(url, headers=headers, data=json.dumps(data))
         return resp.json()
 
-    def create_market_buy_order(self, ticker: str, quantity: int) -> dict:
+    def create_market_buy_order(self, symbol: str, quantity: int) -> dict:
         """시장가 매수
 
         Args:
-            ticker (str): _description_
+            symbol (str): _description_
             quantity (int): _description_
 
         Returns:
             dict: _description_
         """
-        return self.create_order("buy", ticker, 0, quantity, "01")
+        return self.create_order("buy", symbol, 0, quantity, "01")
 
-    def create_market_sell_order(self, ticker: str, quantity: int) -> dict:
+    def create_market_sell_order(self, symbol: str, quantity: int) -> dict:
         """시장가 매도
 
         Args:
-            ticker (str): _description_
+            symbol (str): _description_
             quantity (int): _description_
 
         Returns:
             dict: _description_
         """
-        return self.create_order("sell", ticker, 0, quantity, "01")
+        return self.create_order("sell", symbol, 0, quantity, "01")
 
-    def create_limit_buy_order(self, ticker: str, price: int, quantity: int) -> dict:
+    def create_limit_buy_order(self, symbol: str, price: int, quantity: int) -> dict:
         """지정가 매수
 
         Args:
-            ticker (str): 종목코드
+            symbol (str): 종목코드
             price (int): 가격
             quantity (int): 수량
 
@@ -1001,17 +1001,17 @@ class KoreaInvestment:
             dict: _description_
         """
         if self.exchange == "서울":
-            resp = self.create_order("buy", ticker, price, quantity, "00")
+            resp = self.create_order("buy", symbol, price, quantity, "00")
         else:
-            resp = self.create_oversea_order("buy", ticker, price, quantity, "00")
+            resp = self.create_oversea_order("buy", symbol, price, quantity, "00")
 
         return resp
 
-    def create_limit_sell_order(self, ticker: str, price: int, quantity: int) -> dict:
+    def create_limit_sell_order(self, symbol: str, price: int, quantity: int) -> dict:
         """지정가 매도
 
         Args:
-            ticker (str): _description_
+            symbol (str): _description_
             price (int): _description_
             quantity (int): _description_
 
@@ -1019,9 +1019,9 @@ class KoreaInvestment:
             dict: _description_
         """
         if self.exchange == "서울":
-            resp = self.create_order("sell", ticker, price, quantity, "00")
+            resp = self.create_order("sell", symbol, price, quantity, "00")
         else:
-            resp = self.create_oversea_order("sell", ticker, price, quantity, "00")
+            resp = self.create_oversea_order("sell", symbol, price, quantity, "00")
         return resp
 
     def cancel_order(self, order_code: str, order_id: str, order_type: str,
@@ -1134,13 +1134,13 @@ class KoreaInvestment:
         resp = requests.get(url, headers=headers, params=params)
         return resp.json()
 
-    def create_oversea_order(self, side: str, ticker: str, price: int,
+    def create_oversea_order(self, side: str, symbol: str, price: int,
                              quantity: int, order_type: str) -> dict:
         """_summary_
 
         Args:
             side (str): _description_
-            ticker (str): _description_
+            symbol (str): _description_
             price (int): _description_
             quantity (int): _description_
             order_type (str): _description_
@@ -1161,7 +1161,7 @@ class KoreaInvestment:
             "CANO": self.acc_no_prefix,
             "ACNT_PRDT_CD": self.acc_no_postfix,
             "OVRS_EXCG_CD": exchange_cd,
-            "PDNO": ticker,
+            "PDNO": symbol,
             "ORD_QTY": str(quantity),
             "OVRS_ORD_UNPR": str(price),
             "ORD_SVR_DVSN_CD": "0",
@@ -1179,13 +1179,13 @@ class KoreaInvestment:
         resp = requests.post(url, headers=headers, data=json.dumps(data))
         return resp.json()
 
-    def fetch_ohlcv2(self, ticker: str, timeframe:str='1d', to:str="",
+    def fetch_ohlcv2(self, symbol: str, timeframe:str='1d', to:str="",
                     adjusted:bool=True):
         """해외주식현재가-해외주식기간별시세
            해외주식의 기반별 시세를 확인하는 API
 
         Args:
-            ticker (str): 종목코드
+            symbol (str): 종목코드
             timeframe (str, optional): '1d', '1w', '1m'
             since (str, optional): YYYYMMDD
             adjusted (bool, optional): False: 수정주가 미반영, True: 수정주가 반영
@@ -1210,7 +1210,7 @@ class KoreaInvestment:
         params = {
             "AUTH": "",
             "EXCD": EXCHANGE_CODE.get(self.exchange, "NAS"),
-            "SYMB": ticker,
+            "SYMB": symbol,
             "GUBN": timeframe_lookup.get(timeframe, "1d"),
             "BYMD": to,
             "MODP": 1 if adjusted else 0
