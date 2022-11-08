@@ -18,8 +18,8 @@ broker = mojito.KoreaInvestment(
 
 resp = broker.cancel_order(
     org_no="91252",
-    order_no="0000119206",
-    quantity=4,
-    total=True
+    order_no="0000120154",
+    quantity=2,     # 취소하고자하는 수량
+    total=False     # 잔량일부
 )
 pprint.pprint(resp)

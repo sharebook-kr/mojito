@@ -15,5 +15,5 @@ broker = mojito.KoreaInvestment(
 )
 
 # fetch_tickers
-tickers = broker.fetch_kosdaq_tickers()
-tickers.to_excel("kosdaq_code.xlsx", index=False)
+symbols = broker.fetch_kospi_symbols()
+symbols.to_excel("kosi_code.xlsx", index=False)

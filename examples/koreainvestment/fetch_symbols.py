@@ -15,10 +15,11 @@ broker = mojito.KoreaInvestment(
     acc_no = ACC_NO
 )
 
-# fetch_tickers
-tickers = broker.fetch_tickers()
-print(tickers.head())
-#cond = tickers['그룹코드'] == 'ST'
-#print(tickers[cond])
-#tickers.to_excel("korea_code.xlsx", index=False)
+# fetch_symbols
+symbols = broker.fetch_symbols()
+print(symbols.head())
+
+cond = symbols['그룹코드'] == 'ST'
+print(symbols[cond])
+symbols.to_excel("korea_code.xlsx", index=False)
 

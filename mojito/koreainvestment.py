@@ -1024,51 +1024,55 @@ class KoreaInvestment:
             resp = self.create_oversea_order("sell", symbol, price, quantity, "00")
         return resp
 
-    def cancel_order(self, order_code: str, order_id: str, order_type: str,
-                     price: int, quantity: int):
+    def cancel_order(self, org_no: str, order_no: str, quantity: int, total: bool,
+                     order_type: str="00", price: int=100):
         """주문 취소
 
         Args:
-            order_code (str): _description_
-            order_id (str): _description_
-            order_type (str): _description_
-            price (int): _description_
-            quantity (int): _description_
+            org_no(str): organization number
+            order_no (str): order number
+            quantity (int): 수량
+            total (bool): True (잔량전부), False (잔량일부)
+            order_type (str): 주문구분
+            price (int): 가격
 
         Returns:
-            _type_: _description_
+            dict :
         """
         return self.update_order(
-            order_code, order_id, order_type, price, quantity, is_change=False
+            org_no, order_no, order_type, price, quantity, False, total
         )
 
-    def modify_order(self, order_code: str, order_id: str, order_type: str,
-                     price: int, quantity: int):
-        """_summary_
+    def modify_order(self, org_no: str, order_no: str, order_type: str,
+                     price: int, quantity: int, total: bool):
+        """주문정정
 
         Args:
-            order_code (str): _description_
-            order_id (str): _description_
-            order_type (str): _description_
-            price (int): _description_
-            quantity (int): _description_
+            org_no(str): organization number
+            order_no (str): order number
+            order_type (str): 주문구분
+            price (int): 가격
+            quantity (int): 수량
+            total (bool): True (잔량전부), False (잔량일부)
 
         Returns:
-            _type_: _description_
+            dict : _description_
         """
-        return self.update_order(order_code, order_id, order_type, price, quantity)
+        return self.update_order(
+            org_no, order_no, order_type, price, quantity, True, total)
 
-    def update_order(self, order_code: str, order_id: str, order_type: str, price: int,
-                     quantity: int, is_change: bool = True):
-        """_summary_
+    def update_order(self, org_no: str, order_no: str, order_type: str, price: int,
+                     quantity: int, is_change: bool = True, total: bool = True):
+        """국내주식주문/주식주문(정정취소)
 
         Args:
-            order_code (str): _description_
-            order_id (str): _description_
-            order_type (str): _description_
-            price (int): _description_
-            quantity (int): _description_
-            is_change (bool, optional): _description_. Defaults to True.
+            org_no (str): organization code
+            order_no (str): order number
+            order_type (str): 주문구분
+            price (int): 가격
+            quantity (int): 수량
+            is_change (bool, optional): True: 정정, False: 취소
+            total (bool, optional): True (잔량전부), False (잔량일부)
 
         Returns:
             _type_: _description_
@@ -1079,13 +1083,13 @@ class KoreaInvestment:
         data = {
             "CANO": self.acc_no_prefix,
             "ACNT_PRDT_CD": self.acc_no_postfix,
-            "KRX_FWDG_ORD_ORGNO": order_code,
-            "ORGN_ODNO": order_id,
+            "KRX_FWDG_ORD_ORGNO": org_no,
+            "ORGN_ODNO": order_no,
             "ORD_DVSN": order_type,
             "RVSE_CNCL_DVSN_CD": param,
             "ORD_QTY": str(quantity),
             "ORD_UNPR": str(price),
-            "QTY_ALL_ORD_YN": all
+            "QTY_ALL_ORD_YN": 'Y' if total else 'N'
         }
         hashkey = self.issue_hashkey(data)
         headers = {
@@ -1093,7 +1097,7 @@ class KoreaInvestment:
            "authorization": self.access_token,
            "appKey": self.api_key,
            "appSecret": self.api_secret,
-           "tr_id": "TTTC0803U",
+           "tr_id": "VTTC0803U" if self.mock else "TTTC0803U",
            "hashkey": hashkey
         }
         resp = requests.post(url, headers=headers, data=json.dumps(data))
