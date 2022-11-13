@@ -4,12 +4,12 @@
 import pprint
 import mojito
 
-with open("../../koreainvestment.key", encoding='utf-8') as f:
+with open("../../../koreainvestment.key", encoding='utf-8') as f:
     lines = f.readlines()
 
 key = lines[0].strip()
 secret = lines[1].strip()
-acc_no="63398082-01"
+acc_no = lines[2].strip()
 
 broker = mojito.KoreaInvestment(
     api_key=key,
@@ -18,8 +18,8 @@ broker = mojito.KoreaInvestment(
     exchange='나스닥'
 )
 
-resp = broker.create_limit_buy_order(
-    ticker="TQQQ",
+resp = broker.create_limit_sell_order(
+    symbol="TQQQ",
     price=30,
     quantity=5
 )

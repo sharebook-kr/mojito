@@ -15,8 +15,9 @@ broker = mojito.KoreaInvestment(
 )
 
 resp = broker.fetch_ohlcv(
-    ticker="005930",
+    symbol="005930",
     timeframe='D',
     adj_price=True
 )
 pprint.pprint(resp)
+print(len(resp['output2']))
