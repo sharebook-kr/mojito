@@ -682,7 +682,7 @@ class KoreaInvestment:
         tmp_fil1 = base_dir + "/kospi_code_part1.tmp"
         tmp_fil2 = base_dir + "/kospi_code_part2.tmp"
 
-        wf1 = open(tmp_fil1, mode="w")
+        wf1 = open(tmp_fil1, mode="w", encoding="cp949")
         wf2 = open(tmp_fil2, mode="w")
 
         with open(file_name, mode="r", encoding="cp949") as f:
@@ -699,7 +699,7 @@ class KoreaInvestment:
         wf2.close()
 
         part1_columns = ['단축코드', '표준코드', '한글명']
-        df1 = pd.read_csv(tmp_fil1, header=None, names=part1_columns)
+        df1 = pd.read_csv(tmp_fil1, header=None, encoding='cp949', names=part1_columns)
 
         field_specs = [
             2, 1, 4, 4, 4,
@@ -758,7 +758,7 @@ class KoreaInvestment:
         tmp_fil1 = base_dir +  "/kosdaq_code_part1.tmp"
         tmp_fil2 = base_dir +  "/kosdaq_code_part2.tmp"
 
-        wf1 = open(tmp_fil1, mode="w")
+        wf1 = open(tmp_fil1, mode="w", encoding="cp949")
         wf2 = open(tmp_fil2, mode="w")
         with open(file_name, mode="r", encoding="cp949") as f:
             for row in f:
@@ -775,7 +775,7 @@ class KoreaInvestment:
         wf2.close()
 
         part1_columns = ['단축코드', '표준코드', '한글명']
-        df1 = pd.read_csv(tmp_fil1, header=None, names=part1_columns)
+        df1 = pd.read_csv(tmp_fil1, header=None, encoding="cp949", names=part1_columns)
 
         field_specs = [
             2, 1, 4, 4, 4,      # line 20
