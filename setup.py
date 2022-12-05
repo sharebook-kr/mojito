@@ -13,7 +13,7 @@ with open("README.md", "r", encoding='UTF-8') as fh:
 
 setuptools.setup(
     name='mojito2',
-    version='0.1.3',
+    version='0.1.4',
     author='Jonghun Yoo, Brayden Jo',
     author_email='jonghun.yoo@pyquant.co.kr, brayden.jo@pyquant.co.kr',
     description="python wrapper for korea broker's REST API services",

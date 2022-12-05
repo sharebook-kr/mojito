@@ -845,6 +845,38 @@ class KoreaInvestment:
         df = self.parse_kosdaq_master(base_dir)
         return df
 
+    def check_buy_order(self, symbol: str, price: int, order_type: str):
+        """국내주식주문/매수가능조회
+
+        Args:
+            symbol (str): symbol
+            price (int): 1주당 가격
+            order_type (str): "00": 지정가, "01": 시장가, ..., "80": 바스켓
+        """
+        path = "/uapi/domestic-stock/v1/trading/inquire-psbl-order"
+        url = f"{self.base_url}/{path}"
+        headers = {
+           "content-type": "application/json",
+           "authorization": self.access_token,
+           "appKey": self.api_key,
+           "appSecret": self.api_secret,
+           "tr_id": "VTTC8908R" if self.mock else "TTTC8908R"
+        }
+        params = {
+            'CANO': self.acc_no_prefix,
+            'ACNT_PRDT_CD': self.acc_no_postfix,
+            'PDNO': symbol,
+            'ORD_UNPR': str(price),
+            'ORD_DVSN': order_type,
+            'CMA_EVLU_AMT_ICLD_YN': '1',
+            'OVRS_ICLD_YN': '1'
+        }
+
+        res = requests.get(url, headers=headers, params=params)
+        data = res.json()
+        data['tr_cont'] = res.headers['tr_cont']
+        return data
+
     def fetch_balance(self) -> dict:
         """잔고 조회
 
