@@ -187,6 +187,7 @@ class KoreaInvestmentWS(Process):
         self.aes_key = None
         self.aes_iv = None
         self.queue = Queue()
+        self.base_url = "https://openapi.koreainvestment.com:9443"
 
     def run(self):
         """_summary_
@@ -198,22 +199,23 @@ class KoreaInvestmentWS(Process):
         """
         uri = "ws://ops.koreainvestment.com:21000"
 
+        approval_key = self.get_approval()
+
         async with websockets.connect(uri, ping_interval=None) as websocket:
             header = {
-                "appKey": self.api_key,
-                "appSecret": self.api_secret,
+                "approval_key": approval_key,
+                "personalseckey": "1",
                 "custtype": "P",
                 "tr_type": "1",
-                "content": "utf-8"
-            }
-            body = {
-                "tr_id": None,
-                "tr_key": None,
+                "content-type": "utf-8"
             }
             fmt = {
                 "header": header,
                 "body": {
-                    "input": body
+                    "input": {
+                        "tr_id": None,
+                        "tr_key": None,
+                    }
                 }
             }
 
@@ -261,6 +263,21 @@ class KoreaInvestmentWS(Process):
 
                     elif tr_id == "PINGPONG":
                         await websocket.send(data)
+
+    def get_approval(self) -> str:
+        """실시간 (웹소켓) 접속키 발급
+
+        Returns:
+            str: 웹소켓 접속키
+        """
+        headers = {"content-type": "application/json"}
+        body = {"grant_type": "client_credentials",
+                "appkey": self.api_key,
+                "secretkey": self.api_secret}
+        PATH = "oauth2/Approval"
+        URL = f"{self.base_url}/{PATH}"
+        res = requests.post(URL, headers=headers, data=json.dumps(body))
+        return res.json()["approval_key"]
 
     def aes_cbc_base64_dec(self, cipher_text: str):
         """_summary_
