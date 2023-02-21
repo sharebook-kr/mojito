@@ -21,6 +21,7 @@ broker = mojito.KoreaInvestment(
 ohlcv = broker.fetch_ohlcv(
     symbol="TSLA",
     timeframe='D',
+    end_day="20221231",
     adj_price=True
 )
 pprint.pprint(ohlcv)
