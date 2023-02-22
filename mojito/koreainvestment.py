@@ -1452,6 +1452,9 @@ class KoreaInvestment:
             now = datetime.datetime.now()
             end_day = now.strftime("%Y%m%d")
 
+        if start_day == "":
+            start_day = "19800104"
+
         params = {
             "FID_COND_MRKT_DIV_CODE": "J",
             "FID_INPUT_ISCD": symbol,
