@@ -1357,28 +1357,28 @@ class KoreaInvestment:
             if self.exchange in ["나스닥", "뉴욕", "아멕스"]:
                 tr_id = "VTTT1002U" if side == "buy" else "VTTT1002U"
             elif self.exchange == '도쿄':
-                tr_id = "VTTT1002U" if side == "buy" else "VTTT1002U"
+                tr_id = "VTTS0308U" if side == "buy" else "VTTS0307U"
             elif self.exchange == '상해':
-                tr_id = "VTTT1002U" if side == "buy" else "VTTT1002U"
+                tr_id = "VTTS0202U" if side == "buy" else "VTTS1005U"
             elif self.exchange == '홍콩':
-                tr_id = "VTTT1002U" if side == "buy" else "VTTT1002U"
+                tr_id = "VTTS1002U" if side == "buy" else "VTTS1001U"
             elif self.exchange == '심천':
-                tr_id = "VTTT1002U" if side == "buy" else "VTTT1002U"
+                tr_id = "VTTS0305U" if side == "buy" else "VTTS0304U"
             else:
-                tr_id = "VTTT1002U" if side == "buy" else "VTTT1002U"
+                tr_id = "VTTS0311U" if side == "buy" else "VTTS0310U"
         else:
             if self.exchange in ["나스닥", "뉴욕", "아멕스"]:
                 tr_id = "JTTT1002U" if side == "buy" else "JTTT1006U"
             elif self.exchange == '도쿄':
-                tr_id = "TTTS0308U" if side == "buy" else "TTTS0308U"
+                tr_id = "TTTS0308U" if side == "buy" else "TTTS0307U"
             elif self.exchange == '상해':
-                tr_id = "TTTS0202U" if side == "buy" else "TTTS0202U"
+                tr_id = "TTTS0202U" if side == "buy" else "TTTS1005U"
             elif self.exchange == '홍콩':
-                tr_id = "TTTS1002U" if side == "buy" else "TTTS1002U"
+                tr_id = "TTTS1002U" if side == "buy" else "TTTS1001U"
             elif self.exchange == '심천':
-                tr_id = "TTTS0305U" if side == "buy" else "TTTS0305U"
+                tr_id = "TTTS0305U" if side == "buy" else "TTTS0304U"
             else:
-                tr_id = "TTTS0311U" if side == "buy" else "TTTS0311U"
+                tr_id = "TTTS0311U" if side == "buy" else "TTTS0310U"
 
         exchange_cd = EXCHANGE_CODE3[self.exchange]
 
