@@ -7,7 +7,7 @@ with open("../../koreainvestment.key") as f:
 
 key = lines[0].strip()
 secret = lines[1].strip()
-ACC_NO="63398082-01"
+ACC_NO=lines[2].strip()
 
 broker = mojito.KoreaInvestment(
     api_key=key,
