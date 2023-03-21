@@ -7,7 +7,7 @@
 
 # 설치 
 
-```
+```sh
 $ pip install mojito2
 ```
 
@@ -28,7 +28,7 @@ https://wikidocs.net/book/7845
 
 현재가 조회
 
-```
+```py
 import mojito
 import pprint
 
@@ -44,7 +44,7 @@ pprint.pprint(resp)
 
 일봉 데이터 조회 
 
-```
+```py
 import mojito
 import pprint
 
@@ -59,44 +59,46 @@ pprint.pprint(resp)
 
 잔고 조회 
 
-```
+```py
 resp = broker.fetch_balance()
 pprint.pprint(resp)
 ```
 
 주문 
 
-```
+```py
 resp = broker.create_market_buy_order("005930", 10) # 삼성전자, 10주, 시장가
 pprint.pprint(resp)
 ```
 
-```
-{'rt_cd': '0',
+```yaml
+{
+ 'rt_cd': '0',
  'msg_cd': 'APBK0013',
  'msg1': '주문 전송 완료 되었습니다.',
  'output': {'KRX_FWDG_ORD_ORGNO': '91252',
   'ODNO': '0000117057',
-  'ORD_TMD': '121052'}}
+  'ORD_TMD': '121052'}
+}
 ```
 
 주문 취소
 
-```
+```py
 resp = broker.cancel_order("91252", "0000117057", "00", 60000, 5, "Y") # KRX_FWDG_ORD_ORGNO, ODNO, 지정가 주문, 가격, 수량, 모두 
 print(resp)
 ```
 
 미국주식 주문
 
-```
+```py
 broker = KoreaInvestment(key, secret, acc_no=acc_no, exchange="NASD")
 resp = broker.create_limit_buy_order("TQQQ", 35, 1)
 print(resp)
 ```
 
 웹소켓
-```
+```py
 import pprint
 import mojito
 
