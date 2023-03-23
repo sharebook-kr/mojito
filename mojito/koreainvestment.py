@@ -1354,8 +1354,9 @@ class KoreaInvestment:
 
         tr_id = None
         if self.mock:
+            # 모의투자
             if self.exchange in ["나스닥", "뉴욕", "아멕스"]:
-                tr_id = "VTTT1002U" if side == "buy" else "VTTT1002U"
+                tr_id = "VTTT1002U" if side == "buy" else "VTTT1001U"
             elif self.exchange == '도쿄':
                 tr_id = "VTTS0308U" if side == "buy" else "VTTS0307U"
             elif self.exchange == '상해':
@@ -1367,6 +1368,7 @@ class KoreaInvestment:
             else:
                 tr_id = "VTTS0311U" if side == "buy" else "VTTS0310U"
         else:
+            # 실전투자
             if self.exchange in ["나스닥", "뉴욕", "아멕스"]:
                 tr_id = "JTTT1002U" if side == "buy" else "JTTT1006U"
             elif self.exchange == '도쿄':
