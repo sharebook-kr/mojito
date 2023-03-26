@@ -138,3 +138,6 @@ mock.key
 examples/koreainvestment\kospi_code_part1.tmp
 examples/koreainvestment\kospi_code_part2.tmp
 *.tmp
+examples/koreainvestment/nasdaq/token.dat
+examples/koreainvestment/nasdaq/token.dat
+examples/koreainvestment/nasdaq/token.dat

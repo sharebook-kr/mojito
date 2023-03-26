@@ -18,6 +18,7 @@ broker = mojito.KoreaInvestment(
 resp = broker.fetch_ohlcv(
     symbol="005930",
     timeframe='D',
+    start_day="20220901",
     adj_price=True
 )
 
