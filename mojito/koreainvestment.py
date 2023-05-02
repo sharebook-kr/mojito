@@ -1,16 +1,19 @@
 '''
 한국투자증권 python wrapper
 '''
-import json
-import pickle
 import asyncio
+import datetime
+import json
+import os
+import pickle
+import zipfile
 from base64 import b64decode
 from multiprocessing import Process, Queue
-import datetime
-import requests
-import zipfile
-import os
+from pathlib import Path
+from zoneinfo import ZoneInfo  # Requires Python 3.9+
+
 import pandas as pd
+import requests
 import websockets
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
@@ -361,6 +364,7 @@ class KoreaInvestment:
         self.exchange = exchange
 
         # access token
+        self.token_file = Path("~/.cache/mojito2/token.dat").expanduser()
         self.access_token = None
         if self.check_access_token():
             self.load_access_token()
@@ -389,51 +393,49 @@ class KoreaInvestment:
             "appsecret": self.api_secret
         }
 
-        resp = requests.post(url, headers=headers, data=json.dumps(data))
+        resp = requests.post(url, headers=headers, json=data)
         resp_data = resp.json()
         self.access_token = f'Bearer {resp_data["access_token"]}'
 
-        # add extra information for the token verification
-        now = datetime.datetime.now()
-        resp_data['timestamp'] = int(now.timestamp()) + resp_data["expires_in"]
+        # 'expires_in' has no reference time and causes trouble:
+        # The server thinks I'm expired but my token.dat looks still valid!
+        # Hence, we use 'access_token_token_expired' here.
+        # This error is quite big. I've seen 4000 seconds.
+        timezone = ZoneInfo('Asia/Seoul')
+        dt = datetime.datetime.strptime(resp_data['access_token_token_expired'], '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone)
+        resp_data['timestamp'] = int(dt.timestamp())
         resp_data['api_key'] = self.api_key
         resp_data['api_secret'] = self.api_secret
 
         # dump access token
-        with open("token.dat", "wb") as f:
+        self.token_file.parent.mkdir(parents=True, exist_ok=True)
+        with self.token_file.open("wb") as f:
             pickle.dump(resp_data, f)
 
-    def check_access_token(self):
+    def check_access_token(self) -> bool:
         """check access token
 
         Returns:
             Bool: True: token is valid, False: token is not valid
         """
-        try:
-            f = open("token.dat", "rb")
-            data = pickle.load(f)
-            f.close()
-
-            expire_epoch = data['timestamp']
-            now_epoch = int(datetime.datetime.now().timestamp())
-            status = False
-
-            if ((now_epoch - expire_epoch > 0) or
-                (data['api_key'] != self.api_key) or
-                (data['api_secret'] != self.api_secret)):
-                status = False
-            else:
-                status = True
-            return status
-        except IOError:
+        if not self.token_file.exists():
             return False
+        with self.token_file.open("rb") as f:
+            data = pickle.load(f)
+
+        if (data['api_key'] != self.api_key) or (data['api_secret'] != self.api_secret):
+            return False
+
+        good_until = data['timestamp']
+        ts_now = int(datetime.datetime.now().timestamp())
+        return ts_now < good_until
 
     def load_access_token(self):
         """load access token
         """
-        with open("token.dat", "rb") as f:
+        with self.token_file.open("rb") as f:
             data = pickle.load(f)
-            self.access_token = f'Bearer {data["access_token"]}'
+        self.access_token = f'Bearer {data["access_token"]}'
 
     def issue_hashkey(self, data: dict):
         """해쉬키 발급
