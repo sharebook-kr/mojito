@@ -1512,6 +1512,34 @@ class KoreaInvestment:
         resp = requests.get(url, headers=headers, params=params)
         return resp.json()
 
+    def fetch_price_detail_overesea(self, symbol: str):
+        """해외주식 현재가상세
+
+        Args:
+            symbol (str): symbol
+        """
+        path = "/uapi/overseas-price/v1/quotations/price-detail"
+        url = f"{self.base_url}/{path}"
+
+        headers = {
+           "content-type": "application/json",
+           "authorization": self.access_token,
+           "appKey": self.api_key,
+           "appSecret": self.api_secret,
+           "tr_id": "HHDFS76200200"
+        }
+
+        exchange_code = EXCHANGE_CODE4[self.exchange]
+
+        params = {
+            "AUTH": "",
+            "EXCD": exchange_code,
+            "SYMB": symbol,
+        }
+        resp = requests.get(url, headers=headers, params=params)
+        return resp.json()
+
+
 if __name__ == "__main__":
     import pprint
 
