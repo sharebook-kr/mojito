@@ -1468,7 +1468,7 @@ class KoreaInvestment:
         resp = requests.get(url, headers=headers, params=params)
         return resp.json()
 
-    def fetch_ohlcv_overesea(self, symbol: str, timeframe:str='D',
+    def fetch_ohlcv_oversea(self, symbol: str, timeframe:str='D',
                              end_day:str="", adj_price:bool=True):
         """해외주식현재가/해외주식 기간별시세
 
@@ -1512,7 +1512,7 @@ class KoreaInvestment:
         resp = requests.get(url, headers=headers, params=params)
         return resp.json()
 
-    def fetch_price_detail_overesea(self, symbol: str):
+    def fetch_price_detail_oversea(self, symbol: str):
         """해외주식 현재가상세
 
         Args:
