@@ -1319,7 +1319,8 @@ class KoreaInvestment:
            "authorization": self.access_token,
            "appKey": self.api_key,
            "appSecret": self.api_secret,
-           "tr_id": "TTTC8036R"
+           "tr_id": "TTTC8036R",
+           "tr_cont": "" if fk100 == "" else "N"
         }
 
         params = {
@@ -1332,7 +1333,9 @@ class KoreaInvestment:
         }
 
         resp = requests.get(url, headers=headers, params=params)
-        return resp.json()
+        data = resp.json()
+        data['tr_cont'] = resp.headers['tr_cont']
+        return data
 
     def create_oversea_order(self, side: str, symbol: str, price: int,
                              quantity: int, order_type: str) -> dict:
