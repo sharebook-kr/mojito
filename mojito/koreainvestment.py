@@ -418,10 +418,16 @@ class KoreaInvestment:
         Returns:
             Bool: True: token is valid, False: token is not valid
         """
+
         if not self.token_file.exists():
             return False
+        
         with self.token_file.open("rb") as f:
             data = pickle.load(f)
+            
+        expire_epoch = data['timestamp']
+        now_epoch = int(datetime.datetime.now().timestamp())
+        status = False
 
         if (data['api_key'] != self.api_key) or (data['api_secret'] != self.api_secret):
             return False
@@ -1322,7 +1328,8 @@ class KoreaInvestment:
            "authorization": self.access_token,
            "appKey": self.api_key,
            "appSecret": self.api_secret,
-           "tr_id": "TTTC8036R"
+           "tr_id": "TTTC8036R",
+           "tr_cont": "" if fk100 == "" else "N"
         }
 
         params = {
@@ -1335,7 +1342,9 @@ class KoreaInvestment:
         }
 
         resp = requests.get(url, headers=headers, params=params)
-        return resp.json()
+        data = resp.json()
+        data['tr_cont'] = resp.headers['tr_cont']
+        return data
 
     def create_oversea_order(self, side: str, symbol: str, price: int,
                              quantity: int, order_type: str) -> dict:
