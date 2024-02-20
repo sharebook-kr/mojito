@@ -410,9 +410,8 @@ class KoreaInvestment:
             Bool: True: token is valid, False: token is not valid
         """
         try:
-            f = open("token.dat", "rb")
-            data = pickle.load(f)
-            f.close()
+            with open("token.dat", "rb") as f:
+                data = pickle.load(f)
 
             expire_epoch = data['timestamp']
             now_epoch = int(datetime.datetime.now().timestamp())
